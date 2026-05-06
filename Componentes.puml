@@ -1,0 +1,146 @@
+@startuml 
+
+title <b>Musicaudio — Diagrama de Componentes</b>
+left to right direction
+
+' FRONTEND — Vue.js
+package "Frontend (Vue.js + Vite)" as FRONTEND {
+
+    package "Views" as VIEWS {
+        [LoginView]
+        [RegisterView]
+        [UsersListView]
+        [UserCreateView]
+        [UserEditView]
+    }
+
+    package "Components" as COMPS {
+        [AppHeader]
+        [UserForm]
+        [UserTable]
+    }
+
+    package "Services" as FSERVICES {
+        [api.js\n(Axios + Interceptor JWT)]
+        [authService]
+        [userService]
+        [papelService]
+    }
+
+    package "State Management\n(Pinia)" as STORE {
+        [AuthStore\n(token, isAuthenticated,\nsetToken, logout)]
+    }
+
+    package "Roteamento\n(Vue Router)" as ROUTER {
+        [Router\n(Guard: requiresAuth)]
+    }
+}
+
+' BACKEND — Spring Boot
+
+package "Backend (Spring Boot)" as BACKEND {
+
+    package "Security" as SECURITY {
+        [SecurityFilter\n(OncePerRequestFilter)]
+        [FilterChain\n(SecurityFilterChain Config)]
+        [CustomUserDetails\n(UserDetailsService)]
+    }
+
+    package "Controllers (REST)" as CONTROLLERS {
+        [AuthenticationController\nPOST /login]
+        [UsuarioController\nCRUD /usuarios]
+        [PapelController\nGET+POST /papel]
+    }
+
+    package "DTOs" as DTOS {
+        [LoginRequestDTO]
+        [TokenDTO]
+        [UsuarioResponseDTO]
+    }
+
+    package "Services" as BSERVICES {
+        [TokenService\n(JWT HS256)]
+        [UsuarioServiceImp\n(UsuarioService)]
+        [PapelService]
+    }
+
+    package "Repositories\n(Spring Data JPA)" as REPOS {
+        [UsuarioRepository]
+        [PapelRepository]
+    }
+
+    package "Entities\n(JPA / Hibernate)" as ENTITIES {
+        [Usuario\n(id, nome, email, cpf,\nsenha, papeis)]
+        [Papel\n(id, papel)]
+    }
+}
+
+' BANCO DE DADOS
+
+database "Banco de Dados\n(PostgreSQL / H2)" as DB {
+    [usuarios]
+    [papeis]
+    [usuarios_papeis\n(tabela de junção)]
+}
+
+' RELAÇÕES — FRONTEND INTERNO
+
+[LoginView]      --> [AuthStore\n(token, isAuthenticated,\nsetToken, logout)] : usa
+[LoginView]      --> [authService]   : chama login()
+[RegisterView]   --> [userService]   : chama criarUsuario()
+[RegisterView]   --> [papelService]  : chama listarPapeis()
+[UsersListView]  --> [userService]   : listarUsuarios() / excluirUsuario()
+[UsersListView]  --> [UserTable]     : usa componente
+[UsersListView]  --> [AppHeader]     : usa componente
+[UserCreateView] --> [userService]   : criarUsuario()
+[UserCreateView] --> [papelService]  : listarPapeis()
+[UserCreateView] --> [UserForm]      : usa componente
+[UserEditView]   --> [userService]   : buscarPorId() / atualizarUsuario()
+[UserEditView]   --> [UserForm]      : usa componente
+
+[authService]    --> [api.js\n(Axios + Interceptor JWT)] : usa
+[userService]    --> [api.js\n(Axios + Interceptor JWT)] : usa
+[papelService]   --> [api.js\n(Axios + Interceptor JWT)] : usa
+
+[AuthStore\n(token, isAuthenticated,\nsetToken, logout)] --> [Router\n(Guard: requiresAuth)] : fornece token
+[Router\n(Guard: requiresAuth)] ..> [LoginView]     : redireciona (sem auth)
+[Router\n(Guard: requiresAuth)] ..> [UsersListView] : rota protegida
+
+' RELAÇÕES — FRONTEND → BACKEND (HTTP/REST)
+
+[api.js\n(Axios + Interceptor JWT)] --> [AuthenticationController\nPOST /login]  : POST /login
+[api.js\n(Axios + Interceptor JWT)] --> [UsuarioController\nCRUD /usuarios]       : GET/POST/PUT/DELETE /usuarios
+[api.js\n(Axios + Interceptor JWT)] --> [PapelController\nGET+POST /papel]        : GET/POST /papel
+
+' RELAÇÕES — BACKEND INTERNO
+
+[SecurityFilter\n(OncePerRequestFilter)]  --> [TokenService\n(JWT HS256)]          : validarToken()
+[SecurityFilter\n(OncePerRequestFilter)]  --> [CustomUserDetails\n(UserDetailsService)] : loadUserByUsername()
+[FilterChain\n(SecurityFilterChain Config)] --> [SecurityFilter\n(OncePerRequestFilter)] : addFilterBefore
+[FilterChain\n(SecurityFilterChain Config)] --> [CustomUserDetails\n(UserDetailsService)] : configura
+
+[AuthenticationController\nPOST /login]  --> [LoginRequestDTO]               : recebe
+[AuthenticationController\nPOST /login]  --> [TokenDTO]                      : retorna
+[AuthenticationController\nPOST /login]  --> [TokenService\n(JWT HS256)]      : gerarToken()
+
+[UsuarioController\nCRUD /usuarios]      --> [UsuarioServiceImp\n(UsuarioService)] : delega
+[UsuarioController\nCRUD /usuarios]      --> [UsuarioResponseDTO]             : retorna
+
+[PapelController\nGET+POST /papel]       --> [PapelService]                   : delega
+
+[UsuarioServiceImp\n(UsuarioService)]    --> [UsuarioRepository]              : CRUD
+[UsuarioServiceImp\n(UsuarioService)]    --> [PapelRepository]                : resolverPapeis()
+[UsuarioServiceImp\n(UsuarioService)]    --> [Usuario\n(id, nome, email, cpf,\nsenha, papeis)] : manipula entidade
+
+[PapelService]                           --> [PapelRepository]                : CRUD
+[PapelService]                           --> [Papel\n(id, papel)]             : manipula entidade
+
+[CustomUserDetails\n(UserDetailsService)] --> [UsuarioServiceImp\n(UsuarioService)] : buscarPorEmail()
+
+' RELAÇÕES — BACKEND → BANCO DE DADOS
+
+[UsuarioRepository] --> [usuarios]             : JPA
+[PapelRepository]   --> [papeis]               : JPA
+[Usuario\n(id, nome, email, cpf,\nsenha, papeis)] --> [usuarios_papeis\n(tabela de junção)] : @ManyToMany
+
+@enduml
