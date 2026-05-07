@@ -1,0 +1,79 @@
+@startuml
+title Diagrama de Implantação - Musicáudio
+
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+actor "Usuário" as usuario
+
+node "Dispositivo do Usuário" {
+  artifact "Navegador Web" as browser
+}
+
+node "Servidor Front-end\nNode.js / Vite" as frontend {
+  artifact "Aplicação Vue.js\nMusicáudio Front" as vue
+  component "Vue Router" as router
+  component "Pinia Store" as pinia
+  component "Axios" as axios
+}
+
+node "Servidor Back-end\nJava / Spring Boot" as backend {
+  artifact "musicaudio.jar" as jar
+
+  component "Controllers REST" as controllers
+  component "Spring Security" as security
+  component "JWT Token Service" as jwt
+  component "Services" as services
+  component "Repositories JPA" as repositories
+}
+
+database "Banco de Dados\nPostgreSQL" as postgres {
+  artifact "Database: musicaudio" as db
+  artifact "Tabela: usuarios" as usuarios
+  artifact "Tabela: papeis" as papeis
+}
+
+usuario --> browser : acessa sistema
+browser --> vue : HTTP\nlocalhost:5173
+
+vue --> router
+vue --> pinia
+vue --> axios
+
+axios --> controllers : Requisições REST/JSON\nHTTP localhost:8081
+axios --> security : Authorization: Bearer JWT
+
+controllers --> security : valida permissões
+security --> jwt : valida token
+controllers --> services
+services --> repositories
+repositories --> postgres : JDBC/JPA\nlocalhost:5432
+
+postgres --> db
+db --> usuarios
+db --> papeis
+
+note right of frontend
+Front-end desenvolvido com:
+- Vue.js
+- Vue Router
+- Pinia
+- Axios
+- Vite
+end note
+
+note right of backend
+Back-end desenvolvido com:
+- Spring Boot
+- Spring Web
+- Spring Data JPA
+- Spring Security
+- JWT
+end note
+
+note bottom of postgres
+Banco configurado em:
+jdbc:postgresql://localhost:5432/musicaudio
+end note
+
+@enduml
