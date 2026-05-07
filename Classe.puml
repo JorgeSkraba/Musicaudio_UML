@@ -1,0 +1,286 @@
+@startuml
+title Diagrama de Classes - Musicáudio
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+package "estagio.musicaudio" {
+    
+    class MusicaudioApplication {
+        +main(args: String[]): void
+    }
+}
+
+package "controller" {
+
+    class AuthenticationController <<RestController>> {
+        -authenticationManager: AuthenticationManager
+        -tokenService: TokenService
+        +login(dados: LoginRequestDTO): ResponseEntity<?>
+    }
+
+    class UsuarioController <<RestController>> {
+        -usuarioService: UsuarioService
+        +novoUsuario(usuario: Usuario): ResponseEntity<?>
+        +getUsuarios(): ResponseEntity<List<UsuarioResponseDTO>>
+        +getUsuarioPorId(id: Long): ResponseEntity<?>
+        +atualizarUsuarioPorId(id: Long, usuario: Usuario): ResponseEntity<?>
+        +apagarUsuario(id: Long): ResponseEntity<?>
+    }
+
+    class PapelController <<RestController>> {
+        -papelService: PapelService
+        +listar(): ResponseEntity<?>
+        +save(papel: Papel): ResponseEntity<?>
+    }
+}
+
+package "controller.dto" {
+
+    class LoginRequestDTO <<record>> {
+        +email: String
+        +senha: String
+    }
+
+    class TokenDTO {
+        -token: String
+        +TokenDTO(token: String)
+        +getToken(): String
+        +setToken(token: String): void
+    }
+
+    class UsuarioResponseDTO <<record>> {
+        +id: Long
+        +nome: String
+        +sobrenome: String
+        +email: String
+        +cpf: String
+        +data_nascimento: String
+        +telefone: String
+        +fromEntity(usuario: Usuario): UsuarioResponseDTO
+    }
+}
+
+package "model.entity" {
+
+    class Usuario <<Entity>> {
+        -id: Long
+        -nome: String
+        -sobrenome: String
+        -email: String
+        -cpf: String
+        -data_nascimento: String
+        -telefone: String
+        -senha: String
+        -papeis: List<Papel>
+        +getPapeisString(): List<String>
+    }
+
+    class Papel <<Entity>> {
+        -id: Long
+        -papel: String
+    }
+}
+
+package "model.repository" {
+
+    interface UsuarioRepository <<Repository>> {
+        +findByEmail(email: String): Usuario
+    }
+
+    interface PapelRepository <<Repository>> {
+        +findByPapelIgnoreCase(papel: String): Optional<Papel>
+    }
+
+    interface JpaRepository<T, ID> <<Spring Data>>
+}
+
+package "model.service" {
+
+    interface UsuarioService {
+        +novoUsuario(usuario: Usuario): Usuario
+        +getUsuarios(): List<Usuario>
+        +getUsuarioPorId(id: Long): Usuario
+        +atualizarUsuario(id: Long, usuario: Usuario): Usuario
+        +apagarUsuario(id: Long): Boolean
+        +buscarPorEmail(email: String): Usuario
+    }
+
+    class UsuarioServiceImp <<Service>> {
+        -repository: UsuarioRepository
+        -papelRepository: PapelRepository
+        -passwordEncoder: PasswordEncoder
+        +novoUsuario(usuario: Usuario): Usuario
+        -validarUsuario(usuario: Usuario): void
+        -resolverPapeis(papeisInformados: List<Papel>, permitirPapeisInformados: boolean): List<Papel>
+        +getUsuarios(): List<Usuario>
+        +getUsuarioPorId(id: Long): Usuario
+        +atualizarUsuario(id: Long, usuarioAtualizado: Usuario): Usuario
+        +apagarUsuario(id: Long): Boolean
+        +buscarPorEmail(email: String): Usuario
+    }
+
+    class PapelService <<Service>> {
+        -papelRepository: PapelRepository
+        +salvarPapel(papel: Papel): Papel
+        +getPapeis(): List<Papel>
+    }
+
+    class TokenService <<Service>> {
+        -secretKey: String
+        +gerarToken(subject: String): String
+        +validarToken(token: String): String
+    }
+}
+
+package "security" {
+
+    class CustomUserDetails {
+        -usuarioService: UsuarioService
+        +CustomUserDetails(usuarioService: UsuarioService)
+        +loadUserByUsername(identificador: String): UserDetails
+    }
+
+    class SecurityFilter <<Component>> {
+        -tokenService: TokenService
+        -userDetailsService: UserDetailsService
+        +doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain): void
+        -recuperarToken(request: HttpServletRequest): String
+    }
+
+    class FilterChainConfig <<Configuration>> {
+        +securityFilterChain(http: HttpSecurity, filter: SecurityFilter): SecurityFilterChain
+        +passwordEncoder(): PasswordEncoder
+        +authencationManager(configuration: AuthenticationConfiguration): AuthenticationManager
+        +userDetailsService(usuarioService: UsuarioService): UserDetailsService
+        +corsConfigurationSource(): CorsConfigurationSource
+    }
+}
+
+package "frontend Vue.js" {
+
+    class api <<Axios Instance>> {
+        +baseURL: String
+        +requestInterceptor(config): config
+    }
+
+    class authService <<Service JS>> {
+        +login(dados): Promise
+    }
+
+    class userService <<Service JS>> {
+        +criarUsuario(usuario): Promise
+        +listarUsuarios(): Promise
+        +buscarUsuarioPorId(id): Promise
+        +atualizarUsuario(id, usuario): Promise
+        +excluirUsuario(id): Promise
+    }
+
+    class papelService <<Service JS>> {
+        +listarPapeis(): Promise
+    }
+
+    class authStore <<Pinia Store>> {
+        -token: Ref<String>
+        +isAuthenticated: Computed<Boolean>
+        +setToken(newToken): void
+        +logout(): void
+    }
+
+    class LoginView <<Vue View>>
+    class RegisterView <<Vue View>>
+    class UsersListView <<Vue View>>
+    class UserCreateView <<Vue View>>
+    class UserEditView <<Vue View>>
+
+    class UserForm <<Vue Component>>
+    class UserTable <<Vue Component>>
+    class AppHeader <<Vue Component>>
+}
+
+' Relacionamentos de entidade
+
+Usuario "0..*" -- "0..*" Papel : possui >
+Usuario ..> Papel : getPapeisString()
+
+' Repositories
+
+UsuarioRepository --|> JpaRepository
+PapelRepository --|> JpaRepository
+
+UsuarioRepository ..> Usuario
+PapelRepository ..> Papel
+
+' Services
+
+UsuarioServiceImp ..|> UsuarioService
+UsuarioServiceImp --> UsuarioRepository
+UsuarioServiceImp --> PapelRepository
+UsuarioServiceImp --> Usuario
+UsuarioServiceImp --> Papel
+
+PapelService --> PapelRepository
+PapelService --> Papel
+
+TokenService ..> TokenDTO
+
+' Controllers
+
+AuthenticationController --> TokenService
+AuthenticationController ..> LoginRequestDTO
+AuthenticationController ..> TokenDTO
+
+UsuarioController --> UsuarioService
+UsuarioController ..> Usuario
+UsuarioController ..> UsuarioResponseDTO
+
+PapelController --> PapelService
+PapelController ..> Papel
+
+UsuarioResponseDTO ..> Usuario : fromEntity()
+
+' Segurança
+
+CustomUserDetails --> UsuarioService
+CustomUserDetails ..> Usuario
+
+SecurityFilter --> TokenService
+SecurityFilter --> CustomUserDetails
+
+FilterChainConfig --> SecurityFilter
+FilterChainConfig --> CustomUserDetails
+FilterChainConfig --> UsuarioService
+
+' Front-end
+
+authService --> api
+userService --> api
+papelService --> api
+authStore ..> authService
+
+LoginView --> authService
+LoginView --> authStore
+
+RegisterView --> userService
+RegisterView --> papelService
+
+UsersListView --> userService
+UsersListView --> UserTable
+UsersListView --> AppHeader
+
+UserCreateView --> userService
+UserCreateView --> papelService
+UserCreateView --> UserForm
+UserCreateView --> AppHeader
+
+UserEditView --> userService
+UserEditView --> papelService
+UserEditView --> UserForm
+UserEditView --> AppHeader
+
+api ..> AuthenticationController : POST /login
+api ..> UsuarioController : /usuarios
+api ..> PapelController : /papel
+
+@enduml

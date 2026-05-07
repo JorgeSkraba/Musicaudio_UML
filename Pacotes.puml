@@ -105,7 +105,6 @@ Services ..> Controller : requisições HTTP / Axios
 ' Relações internas do Back-end
 Controller ..> DTO
 Controller ..> Service
-Controller ..> Entity
 
 Service ..> Repository
 Service ..> Entity
