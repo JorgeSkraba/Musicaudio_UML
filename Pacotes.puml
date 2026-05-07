@@ -1,0 +1,124 @@
+@startuml
+title Diagrama de Pacotes - Musicáudio
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+package "Musicáudio" {
+
+  package "Front-end\nVue.js" as Frontend {
+
+    package "src" {
+      package "views" as Views {
+        [LoginView]
+        [RegisterView]
+        [UsersListView]
+        [UserCreateView]
+        [UserEditView]
+      }
+
+      package "components" as Components {
+        [AppHeader]
+        [UserForm]
+        [UserTable]
+      }
+
+      package "services" as Services {
+        [api]
+        [authService]
+        [userService]
+        [papelService]
+      }
+
+      package "stores" as Stores {
+        [auth]
+      }
+
+      package "router" as Router {
+        [index.js]
+      }
+
+      package "assets" as Assets {
+        [main.css]
+      }
+    }
+  }
+
+  package "Back-end\nSpring Boot" as Backend {
+
+    package "estagio.musicaudio" as Root {
+      [MusicaudioApplication]
+    }
+
+    package "controller" as Controller {
+      [AuthenticationController]
+      [UsuarioController]
+      [PapelController]
+    }
+
+    package "controller.dto" as DTO {
+      [LoginRequestDTO]
+      [TokenDTO]
+      [UsuarioResponseDTO]
+    }
+
+    package "model.entity" as Entity {
+      [Usuario]
+      [Papel]
+    }
+
+    package "model.repository" as Repository {
+      [UsuarioRepository]
+      [PapelRepository]
+    }
+
+    package "model.service" as Service {
+      [UsuarioService]
+      [UsuarioServiceImp]
+      [PapelService]
+      [TokenService]
+    }
+
+    package "security" as Security {
+      [CustomUserDetails]
+      [FilterChain]
+      [SecurityFilter]
+    }
+
+    package "resources" as Resources {
+      [application.properties]
+    }
+  }
+}
+
+' Relações internas do Front-end
+Views ..> Components
+Views ..> Services
+Views ..> Stores
+Router ..> Views
+Components ..> Stores
+Services ..> [api]
+
+' Comunicação Front-end -> Back-end
+Services ..> Controller : requisições HTTP / Axios
+
+' Relações internas do Back-end
+Controller ..> DTO
+Controller ..> Service
+Controller ..> Entity
+
+Service ..> Repository
+Service ..> Entity
+
+Repository ..> Entity
+
+Security ..> Service
+Security ..> Entity
+Security ..> Controller : protege endpoints
+
+Root ..> Controller
+Root ..> Service
+Root ..> Repository
+Root ..> Security
+
+@enduml
