@@ -1,6 +1,13 @@
 @startuml
 title Diagrama de Classes - Musicáudio
 
+!pragma layout elk
+
+skinparam linetype ortho
+skinparam nodesep 120
+skinparam ranksep 100
+skinparam padding 5
+
 skinparam classAttributeIconSize 0
 skinparam packageStyle rectangle
 skinparam shadowing false
@@ -14,6 +21,7 @@ package "estagio.musicaudio" {
 
 package "controller" {
 
+    'USUARIO
     class AuthenticationController <<RestController>> {
         -authenticationManager: AuthenticationManager
         -tokenService: TokenService
@@ -29,6 +37,82 @@ package "controller" {
         +apagarUsuario(id: Long): ResponseEntity<?>
     }
 
+    'CURSO
+    class CursoController <<RestController>> {
+        -cursoService: CursoService
+        +criarCurso(dto: CursoRequestDTO): ResponseEntity<CursoResponseDTO>
+        +getCursos(): ResponseEntity<List<CursoResponseDTO>>
+        +getCursoPorId(id: Long): ResponseEntity<CursoResponseDTO>
+        +getCursosPorInstrutor(usuarioId: Long): ResponseEntity<List<CursoResponseDTO>>
+        +atualizarCurso(id: Long, dto: CursoRequestDTO): ResponseEntity<CursoResponseDTO>
+        +publicarCurso(id: Long): ResponseEntity<CursoResponseDTO>
+        +apagarCurso(id: Long): ResponseEntity<Void>
+    }
+
+    'AULA
+    class AulaController <<RestController>> {
+        -aulaService: AulaService
+        +criarAula(cursoId: Long, dto: AulaRequestDTO): ResponseEntity<AulaResponseDTO>
+        +getAulasPorCurso(cursoId: Long): ResponseEntity<List<AulaResponseDTO>>
+        +getAulaPorId(id: Long): ResponseEntity<AulaResponseDTO>
+        +atualizarAula(id: Long, dto: AulaRequestDTO): ResponseEntity<AulaResponseDTO>
+        +ativarDesativarAula(id: Long, dto: AtivarStatusDTO): ResponseEntity<AulaResponseDTO>
+        +apagarAula(id: Long): ResponseEntity<Void>
+    }
+
+    'MATERIAL
+    class MaterialController <<RestController>> {
+        -materialService: MaterialService
+        +criarMaterial(aulaId: Long, dto: MaterialRequestDTO): ResponseEntity<MaterialResponseDTO>
+        +getMateriaisPorAula(aulaId: Long): ResponseEntity<List<MaterialResponseDTO>>
+        +getMaterialPorId(id: Long): ResponseEntity<MaterialResponseDTO>
+        +atualizarMaterial(id: Long, dto: MaterialRequestDTO): ResponseEntity<MaterialResponseDTO>
+        +ativarDesativarMaterial(id: Long, dto: AtivarStatusDTO): ResponseEntity<MaterialResponseDTO>
+        +apagarMaterial(id: Long): ResponseEntity<Void>
+    }
+
+    'COMPRA
+    class CompraController <<RestController>> {
+        -compraService: CompraService
+        +iniciarCompra(dto: CompraRequestDTO): ResponseEntity<CompraResponseDTO>
+        +adicionarItem(compraId: Long, dto: ItemCompraRequestDTO): ResponseEntity<CompraResponseDTO>
+        +finalizarCompra(compraId: Long): ResponseEntity<CompraResponseDTO>
+        +getComprasPorUsuario(usuarioId: Long): ResponseEntity<List<CompraResponseDTO>>
+        +getCompraPorId(id: Long): ResponseEntity<CompraResponseDTO>
+        +cancelarCompra(id: Long): ResponseEntity<Void>
+    }
+
+    'PAGAMENTO
+      class PagamentoController <<RestController>> {
+        -pagamentoService: PagamentoService
+        +processarPagamento(compraId: Long, dto: PagamentoRequestDTO): ResponseEntity<PagamentoResponseDTO>
+        +getPagamentoPorId(id: Long): ResponseEntity<PagamentoResponseDTO>
+        +getPagamentosPorCompra(compraId: Long): ResponseEntity<List<PagamentoResponseDTO>>
+        +atualizarStatusPagamento(id: Long, dto: AtualizarStatusPagamentoDTO): ResponseEntity<PagamentoResponseDTO>
+        +estornarPagamento(id: Long): ResponseEntity<PagamentoResponseDTO>
+    }
+
+    'ITEM COMPRA
+    class ItemCompraController <<RestController>> {
+        -itemCompraService: ItemCompraService
+        +adicionarItem(compraId: Long, dto: ItemCompraRequestDTO): ResponseEntity<ItemCompraResponseDTO>
+        +getItensPorCompra(compraId: Long): ResponseEntity<List<ItemCompraResponseDTO>>
+        +getItemPorId(id: Long): ResponseEntity<ItemCompraResponseDTO>
+        +removerItem(id: Long): ResponseEntity<Void>
+    }
+
+    'MATRICULA
+    class MatriculaController <<RestController>> {
+        -matriculaService: MatriculaService
+        +criarMatricula(dto: MatriculaRequestDTO): ResponseEntity<MatriculaResponseDTO>
+        +getMatriculasPorUsuario(usuarioId: Long): ResponseEntity<List<MatriculaResponseDTO>>
+        +getMatriculaPorId(id: Long): ResponseEntity<MatriculaResponseDTO>
+        +verificarMatricula(usuarioId: Long, cursoId: Long): ResponseEntity<Boolean>
+        +ativarDesativarMatricula(id: Long, dto: AtivarStatusDTO): ResponseEntity<MatriculaResponseDTO>
+        +apagarMatricula(id: Long): ResponseEntity<Void>
+    }
+
+    'PAPEL
     class PapelController <<RestController>> {
         -papelService: PapelService
         +listar(): ResponseEntity<?>
@@ -38,16 +122,10 @@ package "controller" {
 
 package "controller.dto" {
 
+    'USUARIO
     class LoginRequestDTO <<record>> {
         +email: String
         +senha: String
-    }
-
-    class TokenDTO {
-        -token: String
-        +TokenDTO(token: String)
-        +getToken(): String
-        +setToken(token: String): void
     }
 
     class UsuarioResponseDTO <<record>> {
@@ -60,6 +138,144 @@ package "controller.dto" {
         +telefone: String
         +fromEntity(usuario: Usuario): UsuarioResponseDTO
     }
+
+    'CURSO
+    class CursoRequestDTO <<record>> {
+        +nome: String
+        +descricao: String
+        +preco: double
+        +imagem_capa: String
+        +nivel: String
+        +status: String
+    }
+
+    class CursoResponseDTO <<record>> {
+        +id: Long
+        +nome: String
+        +descricao: String
+        +preco: double
+        +imagem_capa: String
+        +nivel: String
+        +status: String
+        +data_criacao: DateTime
+        +data_publicacao: DateTime
+        +fromEntity(curso: Curso): CursoResponseDTO
+    }
+
+    'AULA
+    class AulaRequestDTO <<record>> {
+        +titulo: String
+        +descricao: String
+        +ativo: boolean
+    }
+
+    class AulaResponseDTO <<record>> {
+        +id: Long
+        +titulo: String
+        +descricao: String
+        +ativo: boolean
+        +data_criacao: DateTime
+        +data_atualizacao: DateTime
+        +fk_cursos_id: Long
+        +fromEntity(aula: Aula): AulaResponseDTO
+    }
+
+    'MATERIAL
+    class MaterialRequestDTO <<record>> {
+        +titulo: String
+        +descricao: String
+        +tipo: String
+        +url_arquivo: String
+        +ativo: boolean
+    }
+
+    class MaterialResponseDTO <<record>> {
+        +id: Long
+        +titulo: String
+        +descricao: String
+        +tipo: String
+        +url_arquivo: String
+        +ativo: boolean
+        +data_upload: DateTime
+        +fk_aulas_id: Long
+        +fromEntity(material: Material): MaterialResponseDTO
+    }
+
+    'COMPRA
+    class CompraRequestDTO <<record>> {
+        +fk_usuarios_id: Long
+    }
+
+    class CompraResponseDTO <<record>> {
+        +id: Long
+        +valor_total: float
+        +status: boolean
+        +data_compra: DateTime
+        +fk_usuarios_id: Long
+        +itens: List<ItemCompraResponseDTO>
+        +fromEntity(compra: Compra): CompraResponseDTO
+    }
+
+    'PAGAMENTO
+    class PagamentoRequestDTO <<record>> {
+        +metodo: String
+        +fk_compras_id: Long
+    }
+
+    class PagamentoResponseDTO <<record>> {
+        +id: Long
+        +metodo: String
+        +status: String
+        +codigo_transacao: Long
+        +fk_compras_id: Long
+        +fromEntity(pagamento: Pagamento): PagamentoResponseDTO
+    }
+
+    class AtualizarStatusPagamentoDTO <<record>> {
+        +status: String
+    }
+
+    'ITEM COMPRA
+    class ItemCompraRequestDTO <<record>> {
+        +fk_cursos_id: Long
+    }
+
+    class ItemCompraResponseDTO <<record>> {
+        +id: Long
+        +fk_cursos_id: Long
+        +fk_compras_id: Long
+        +preco: float
+        +fromEntity(item: ItemCompra): ItemCompraResponseDTO
+    }
+
+    'MATRICULA
+    class MatriculaRequestDTO <<record>> {
+        +fk_usuarios_id: Long
+        +fk_cursos_id: Long
+    }
+
+    class MatriculaResponseDTO <<record>> {
+        +id: Long
+        +data_matricula: DateTime
+        +ativo: boolean
+        +fk_usuarios_id: Long
+        +fk_cursos_id: Long
+        +fromEntity(matricula: Matricula): MatriculaResponseDTO
+    }
+
+    class AtivarStatusDTO <<record>> {
+        +ativo: boolean
+    }
+
+
+    'TOKEN
+    class TokenDTO {
+        -token: String
+        +TokenDTO(token: String)
+        +getToken(): String
+        +setToken(token: String): void
+    }
+
 }
 
 package "model.entity" {
@@ -73,6 +289,7 @@ package "model.entity" {
         -data_nascimento: String
         -telefone: String
         -senha: String
+        -data_delecao : DateTime
         -papeis: List<Papel>
         +getPapeisString(): List<String>
     }
@@ -80,6 +297,70 @@ package "model.entity" {
     class Papel <<Entity>> {
         -id: Long
         -papel: String
+    }
+    
+    class Curso <<Entity>> {
+        -id: Long
+        -nome: String
+        -descricao: String
+        -preco: double
+        -imagem_capa: String
+        -nivel: String
+        -status: String
+        -data_criacao: DateTime
+        -data_atualizacao: DateTime
+        data_publicacao: DateTime
+        -data_delecao : DateTime
+    }
+
+    class Aula <<Entity>> {
+        -id: Long
+        -titulo: String
+        -descricao: String
+        -ativo: boolean
+        -data_criacao: DateTime
+        -data_atualizacao: DateTime
+        -data_delecao : DateTime
+    }
+
+    class Material <<Entity>> {
+        -id: Long
+        -titulo: String
+        -descricao: String
+        -tipo: String
+        -url_arquivo: String
+        -ativo: Boolean
+        -data_upload: DateTime
+        -data_delecao : DateTime
+    }
+
+    class Compra <<Entity>> {
+        -id: Long
+        -valor_total: float
+        -status: boolean
+        -data_compra: DateTime
+        -data_delecao : DateTime
+    }
+
+    class Pagamento <<Entity>> {
+        -id: Long
+        -metodo: String
+        -status: String
+        -codigo_transacao: Long
+        -data_delecao : DateTime
+    }
+
+    class ItemCompra <<Entity>> {
+        -id: Long
+        -preco: float
+        -data_delecao : DateTime
+    }
+
+    class Matricula <<Entity>> {
+        -id: Long
+        -data_matricula: DateTime
+        -ativo: boolean
+        -data_delecao : DateTime
     }
 }
 
@@ -93,11 +374,26 @@ package "model.repository" {
         +findByPapelIgnoreCase(papel: String): Optional<Papel>
     }
 
+    interface CursoRepository <<Repository>>
+
+    interface AulaRepository <<Repository>>
+
+    interface MaterialRepository <<Repository>>
+
+    interface CompraRepository <<Repository>>
+
+    interface PagamentoRepository <<Repository>>
+
+    interface ItemCompraRepository <<Repository>>
+
+    interface MatriculaRepository <<Repository>>
+
     interface JpaRepository<T, ID> <<Spring Data>>
 }
 
 package "model.service" {
 
+    ' USUARIO
     interface UsuarioService {
         +novoUsuario(usuario: Usuario): Usuario
         +getUsuarios(): List<Usuario>
@@ -120,6 +416,165 @@ package "model.service" {
         +apagarUsuario(id: Long): Boolean
         +buscarPorEmail(email: String): Usuario
     }
+
+    'CURSO
+    interface CursoService {
+        +criarCurso(curso: Curso): Curso
+        +getCursos(): List<Curso>
+        +getCursoPorId(id: Long): Curso
+        +getCursosPorInstrutor(usuarioId: Long): List<Curso>
+        +atualizarCurso(id: Long, curso: Curso): Curso
+        +publicarCurso(id: Long): Curso
+        +apagarCurso(id: Long): Boolean
+    }
+
+    class CursoServiceImp <<Service>> {
+        -cursoRepository: CursoRepository
+        +criarCurso(curso: Curso): Curso
+        -validarCurso(curso: Curso): void
+        +getCursos(): List<Curso>
+        +getCursoPorId(id: Long): Curso
+        +getCursosPorInstrutor(usuarioId: Long): List<Curso>
+        +atualizarCurso(id: Long, cursoAtualizado: Curso): Curso
+        +publicarCurso(id: Long): Curso
+        +apagarCurso(id: Long): Boolean
+    }
+
+    'AULA
+      interface AulaService {
+        +criarAula(cursoId: Long, aula: Aula): Aula
+        +getAulasPorCurso(cursoId: Long): List<Aula>
+        +getAulaPorId(id: Long): Aula
+        +atualizarAula(id: Long, aula: Aula): Aula
+        +ativarDesativarAula(id: Long, ativo: boolean): Aula
+        +apagarAula(id: Long): Boolean
+    }
+
+    class AulaServiceImp <<Service>> {
+        -aulaRepository: AulaRepository
+        -cursoRepository: CursoRepository
+        +criarAula(cursoId: Long, aula: Aula): Aula
+        -validarCursoExistente(cursoId: Long): void
+        +getAulasPorCurso(cursoId: Long): List<Aula>
+        +getAulaPorId(id: Long): Aula
+        +atualizarAula(id: Long, aulaAtualizada: Aula): Aula
+        +ativarDesativarAula(id: Long, ativo: boolean): Aula
+        +apagarAula(id: Long): Boolean
+    }
+
+    'MATERIAL
+    interface MaterialService {
+        +criarMaterial(aulaId: Long, material: Material): Material
+        +getMateriaisPorAula(aulaId: Long): List<Material>
+        +getMaterialPorId(id: Long): Material
+        +atualizarMaterial(id: Long, material: Material): Material
+        +ativarDesativarMaterial(id: Long, ativo: boolean): Material
+        +apagarMaterial(id: Long): Boolean
+    }
+
+    class MaterialServiceImp <<Service>> {
+        -materialRepository: MaterialRepository
+        -aulaRepository: AulaRepository
+        +criarMaterial(aulaId: Long, material: Material): Material
+        -validarAulaExistente(aulaId: Long): void
+        -validarTipoArquivo(tipo: String): void
+        +getMateriaisPorAula(aulaId: Long): List<Material>
+        +getMaterialPorId(id: Long): Material
+        +atualizarMaterial(id: Long, materialAtualizado: Material): Material
+        +ativarDesativarMaterial(id: Long, ativo: boolean): Material
+        +apagarMaterial(id: Long): Boolean
+    }
+
+    'COMPRA
+    interface CompraService {
+        +iniciarCompra(usuarioId: Long): Compra
+        +adicionarItem(compraId: Long, cursoId: Long): Compra
+        +finalizarCompra(compraId: Long): Compra
+        +getComprasPorUsuario(usuarioId: Long): List<Compra>
+        +getCompraPorId(id: Long): Compra
+        +cancelarCompra(id: Long): Boolean
+    }
+
+    class CompraServiceImp <<Service>> {
+        -compraRepository: CompraRepository
+        -itemCompraRepository: ItemCompraRepository
+        -cursoRepository: CursoRepository
+        +iniciarCompra(usuarioId: Long): Compra
+        +adicionarItem(compraId: Long, cursoId: Long): Compra
+        -calcularValorTotal(compraId: Long): float
+        -validarCursoNaoDuplicado(compraId: Long, cursoId: Long): void
+        +finalizarCompra(compraId: Long): Compra
+        +getComprasPorUsuario(usuarioId: Long): List<Compra>
+        +getCompraPorId(id: Long): Compra
+        +cancelarCompra(id: Long): Boolean
+    }
+
+    'PAGAMENTO
+    interface PagamentoService {
+        +processarPagamento(compraId: Long, pagamento: Pagamento): Pagamento
+        +getPagamentoPorId(id: Long): Pagamento
+        +getPagamentosPorCompra(compraId: Long): List<Pagamento>
+        +atualizarStatusPagamento(id: Long, status: String): Pagamento
+        +estornarPagamento(id: Long): Pagamento
+    }
+
+    class PagamentoServiceImp <<Service>> {
+        -pagamentoRepository: PagamentoRepository
+        -compraRepository: CompraRepository
+        -matriculaService: MatriculaService
+        +processarPagamento(compraId: Long, pagamento: Pagamento): Pagamento
+        -gerarCodigoTransacao(): Long
+        -validarMetodoPagamento(metodo: String): void
+        +getPagamentoPorId(id: Long): Pagamento
+        +getPagamentosPorCompra(compraId: Long): List<Pagamento>
+        +atualizarStatusPagamento(id: Long, status: String): Pagamento
+        -acionarMatriculaAposAprovacao(compraId: Long): void
+        +estornarPagamento(id: Long): Pagamento
+    }
+
+    'ITEM COMPRA
+    interface ItemCompraService {
+        +adicionarItem(compraId: Long, cursoId: Long): ItemCompra
+        +getItensPorCompra(compraId: Long): List<ItemCompra>
+        +getItemPorId(id: Long): ItemCompra
+        +removerItem(id: Long): Boolean
+    }
+
+    class ItemCompraServiceImp <<Service>> {
+        -itemCompraRepository: ItemCompraRepository
+        -cursoRepository: CursoRepository
+        -compraRepository: CompraRepository
+        +adicionarItem(compraId: Long, cursoId: Long): ItemCompra
+        -capturarPrecoCurso(cursoId: Long): float
+        -validarCompraAberta(compraId: Long): void
+        +getItensPorCompra(compraId: Long): List<ItemCompra>
+        +getItemPorId(id: Long): ItemCompra
+        +removerItem(id: Long): Boolean
+    }
+
+    'MATRICULA
+    interface MatriculaService {
+        +criarMatricula(usuarioId: Long, cursoId: Long): Matricula
+        +getMatriculasPorUsuario(usuarioId: Long): List<Matricula>
+        +getMatriculaPorId(id: Long): Matricula
+        +verificarMatricula(usuarioId: Long, cursoId: Long): boolean
+        +ativarDesativarMatricula(id: Long, ativo: boolean): Matricula
+        +apagarMatricula(id: Long): Boolean
+    }
+
+    class MatriculaServiceImp <<Service>> {
+        -matriculaRepository: MatriculaRepository
+        -cursoRepository: CursoRepository
+        +criarMatricula(usuarioId: Long, cursoId: Long): Matricula
+        -validarMatriculaDuplicada(usuarioId: Long, cursoId: Long): void
+        -validarCursoAtivo(cursoId: Long): void
+        +getMatriculasPorUsuario(usuarioId: Long): List<Matricula>
+        +getMatriculaPorId(id: Long): Matricula
+        +verificarMatricula(usuarioId: Long, cursoId: Long): boolean
+        +ativarDesativarMatricula(id: Long, ativo: boolean): Matricula
+        +apagarMatricula(id: Long): Boolean
+    }
+
 
     class PapelService <<Service>> {
         -papelRepository: PapelRepository
@@ -158,7 +613,8 @@ package "security" {
     }
 }
 
-package "frontend Vue.js" {
+'SERVICES FRONT-END
+package "services Vue.js" {
 
     class api <<Axios Instance>> {
         +baseURL: String
@@ -169,6 +625,7 @@ package "frontend Vue.js" {
         +login(dados): Promise
     }
 
+    'USUARIO
     class userService <<Service JS>> {
         +criarUsuario(usuario): Promise
         +listarUsuarios(): Promise
@@ -177,10 +634,110 @@ package "frontend Vue.js" {
         +excluirUsuario(id): Promise
     }
 
+    'CURSO
+    class cursoService <<Service JS>> {
+        +criarCurso(curso): Promise<CursoResponseDTO>
+        +listarCursos(): Promise<CursoResponseDTO[]>
+        +buscarCursoPorId(id): Promise<CursoResponseDTO>
+        +listarCursosPorInstrutor(usuarioId): Promise<CursoResponseDTO[]>
+        +atualizarCurso(id, curso): Promise<CursoResponseDTO>
+        +publicarCurso(id): Promise<CursoResponseDTO>
+        +excluirCurso(id): Promise
+    }
+
+    'AULA
+    class aulaService <<Service JS>> {
+        +criarAula(cursoId, aula): Promise<AulaResponseDTO>
+        +listarAulasPorCurso(cursoId): Promise<AulaResponseDTO[]>
+        +buscarAulaPorId(id): Promise<AulaResponseDTO>
+        +atualizarAula(id, aula): Promise<AulaResponseDTO>
+        +ativarDesativarAula(id, ativo): Promise<AulaResponseDTO>
+        +excluirAula(id): Promise
+    }
+
+    'MATERIAL
+    class materialService <<Service JS>> {
+        +criarMaterial(aulaId, material): Promise<MaterialResponseDTO>
+        +listarMateriaisPorAula(aulaId): Promise<MaterialResponseDTO[]>
+        +buscarMaterialPorId(id): Promise<MaterialResponseDTO>
+        +atualizarMaterial(id, material): Promise<MaterialResponseDTO>
+        +ativarDesativarMaterial(id, ativo): Promise<MaterialResponseDTO>
+        +excluirMaterial(id): Promise
+    }
+
+    'COMPRA
+    class compraService <<Service JS>> {
+        +iniciarCompra(usuarioId): Promise<CompraResponseDTO>
+        +adicionarItem(compraId, cursoId): Promise<CompraResponseDTO>
+        +finalizarCompra(compraId): Promise<CompraResponseDTO>
+        +listarComprasPorUsuario(usuarioId): Promise<CompraResponseDTO[]>
+        +buscarCompraPorId(id): Promise<CompraResponseDTO>
+        +cancelarCompra(id): Promise
+    }
+
+    'PAGAMNETO
+    class pagamentoService <<Service JS>> {
+        +processarPagamento(compraId, pagamento): Promise<PagamentoResponseDTO>
+        +buscarPagamentoPorId(id): Promise<PagamentoResponseDTO>
+        +listarPagamentosPorCompra(compraId): Promise<PagamentoResponseDTO[]>
+        +atualizarStatusPagamento(id, status): Promise<PagamentoResponseDTO>
+        +estornarPagamento(id): Promise<PagamentoResponseDTO>
+    }
+
+    'ITEM COMPRA
+    class itemCompraService <<Service JS>> {
+        +adicionarItem(compraId, cursoId): Promise<ItemCompraResponseDTO>
+        +listarItensPorCompra(compraId): Promise<ItemCompraResponseDTO[]>
+        +buscarItemPorId(id): Promise<ItemCompraResponseDTO>
+        +removerItem(id): Promise
+    }
+
+    'MATRICULA
+    class matriculaService <<Service JS>> {
+        +criarMatricula(usuarioId, cursoId): Promise<MatriculaResponseDTO>
+        +listarMatriculasPorUsuario(usuarioId): Promise<MatriculaResponseDTO[]>
+        +buscarMatriculaPorId(id): Promise<MatriculaResponseDTO>
+        +verificarMatricula(usuarioId, cursoId): Promise<Boolean>
+        +ativarDesativarMatricula(id, ativo): Promise<MatriculaResponseDTO>
+        +excluirMatricula(id): Promise
+    }
+
+    'PAPEL
     class papelService <<Service JS>> {
         +listarPapeis(): Promise
     }
+}
 
+package "components" {
+
+    class UserForm <<Vue Component>>
+    class UserTable <<Vue Component>>
+
+    class AppHeader <<Vue Component>>
+
+    class CursoCard <<Vue Component>>
+    class CursoForm <<Vue Component>>
+
+    class AulaItem <<Vue Component>>
+    class AulaForm <<Vue Component>>
+
+    class MaterialItem <<Vue Component>>
+    class MaterialForm <<Vue Component>>
+
+    class CarrinhoItem <<Vue Component>>
+
+    class PagamentoForm <<Vue Component>>
+
+    class MatriculaTable <<Vue Component>> 
+
+    class StatusBadge <<Vue Component>> 
+
+}
+
+'PINIA STORE
+package "stores"{
+
+    'AUTH
     class authStore <<Pinia Store>> {
         -token: Ref<String>
         +isAuthenticated: Computed<Boolean>
@@ -188,15 +745,93 @@ package "frontend Vue.js" {
         +logout(): void
     }
 
+    'CURSO
+    class cursoStore <<Pinia Store>> {
+        -cursoAtual: Ref<CursoResponseDTO>
+        -cursosInstrutor: Ref<CursoResponseDTO[]>
+        +setCursoAtual(curso): void
+        +setCursosInstrutor(cursos): void
+        +limpar(): void
+    }
+
+    'CARRINHO 
+    class carrinhoStore <<Pinia Store>> {
+        -itens: Ref<CursoResponseDTO[]>
+        -compraIdAtual: Ref<Long>
+        +totalItens: Computed<Number>
+        +valorTotal: Computed<Float>
+        +adicionarAoCarrinho(curso): void
+        +removerDoCarrinho(cursoId): void
+        +setCompraId(id): void
+        +limpar(): void
+    }
+
+    'MATRICULA
+    class matriculaStore <<Pinia Store>> {
+        -matriculas: Ref<MatriculaResponseDTO[]>
+        +cursosMatriculados: Computed<Long[]>
+        +setMatriculas(lista): void
+        +estaMatriculado(cursoId): Boolean
+        +limpar(): void
+    }
+
+}
+
+'ROUTER
+package "router" {
+
+    class Router <<Vue Router>> {
+        ' ── públicas ─────────────────────────
+        +/login → LoginView
+        +/cadastro → RegisterView
+        ' ── privadas (requiresAuth) ──────────
+        +/usuarios → UsersListView
+        +/usuarios/novo → UserCreateView
+        +/usuarios/editar/:id → UserEditView
+        +/cursos → CursosListView
+        +/cursos/novo → CursoCreateView
+        +/cursos/:id → CursoDetailView
+        +/cursos/:id/editar → CursoEditView
+        +/cursos/:id/aulas/nova → AulaCreateView
+        +/cursos/:id/aulas/:aulaId/editar → AulaEditView
+        +/cursos/:id/aulas/:aulaId/materiais/novo → MaterialCreateView
+        +/cursos/:id/aulas/:aulaId/materiais/:matId/editar → MaterialEditView
+        +/carrinho → CarrinhoView
+        +/compras/:id/pagamento → PagamentoView
+        +/meus-cursos → MeusCursosView
+        +/admin/matriculas → MatriculasAdminView
+        +beforeEach(): verificaToken
+    }
+}
+
+'VIEWS
+package "views" {
+
     class LoginView <<Vue View>>
     class RegisterView <<Vue View>>
+
     class UsersListView <<Vue View>>
     class UserCreateView <<Vue View>>
     class UserEditView <<Vue View>>
 
-    class UserForm <<Vue Component>>
-    class UserTable <<Vue Component>>
-    class AppHeader <<Vue Component>>
+    class CursosListView <<Vue View>>
+    class CursoCreateView <<Vue View>>
+    class CursoEditView <<Vue View>>
+    class CursoDetailView <<Vue View>>
+
+    class MeusCursosView <<Vue View>> 
+
+    class AulaCreateView <<Vue View>> 
+    class AulaEditView <<Vue View>> 
+
+    class MaterialCreateView <<Vue View>>
+    class MaterialEditView <<Vue View>>
+
+    class CarrinhoView <<Vue View>>
+    class PagamentoView <<Vue View>>
+
+    class MatriculasAdminView <<Vue View>>
+
 }
 
 ' Relacionamentos de entidade
@@ -207,34 +842,158 @@ Usuario ..> Papel : getPapeisString()
 ' Repositories
 
 UsuarioRepository --|> JpaRepository
+CursoRepository --|> JpaRepository
+AulaRepository --|> JpaRepository
+MaterialRepository --|> JpaRepository
+CompraRepository --|> JpaRepository
+PagamentoRepository --|> JpaRepository
+ItemCompraRepository --|> JpaRepository
+MatriculaRepository  --|> JpaRepository
 PapelRepository --|> JpaRepository
 
 UsuarioRepository ..> Usuario
+CursoRepository ..> Curso
+AulaRepository ..> Aula
+MaterialRepository ..> Material
+CompraRepository ..> Compra
+PagamentoRepository ..> Pagamento
+ItemCompraRepository ..> ItemCompra
+MatriculaRepository ..> Matricula
 PapelRepository ..> Papel
 
 ' Services
 
+    'USUARIO
 UsuarioServiceImp ..|> UsuarioService
 UsuarioServiceImp --> UsuarioRepository
 UsuarioServiceImp --> PapelRepository
 UsuarioServiceImp --> Usuario
 UsuarioServiceImp --> Papel
 
+    'PAPEL
 PapelService --> PapelRepository
 PapelService --> Papel
 
+    'CURSO
+CursoServiceImp ..|> CursoService
+CursoServiceImp --> CursoRepository
+CursoServiceImp --> Curso
+
+    'AULA
+AulaServiceImp ..|> AulaService
+AulaServiceImp --> AulaRepository
+AulaServiceImp --> CursoRepository
+AulaServiceImp --> Aula
+AulaServiceImp --> Curso
+
+    'MATERIAL
+MaterialServiceImp ..|> MaterialService
+MaterialServiceImp --> MaterialRepository
+MaterialServiceImp --> AulaRepository
+MaterialServiceImp --> Material
+MaterialServiceImp --> Aula
+
+    'COMPRA
+CompraServiceImp ..|> CompraService
+CompraServiceImp --> CompraRepository
+CompraServiceImp --> ItemCompraRepository
+CompraServiceImp --> CursoRepository
+CompraServiceImp --> Compra
+CompraServiceImp --> ItemCompra
+CompraServiceImp --> Curso
+
+    'PAGAMENTO
+PagamentoServiceImp ..|> PagamentoService
+PagamentoServiceImp --> PagamentoRepository
+PagamentoServiceImp --> CompraRepository
+PagamentoServiceImp --> MatriculaService
+PagamentoServiceImp --> Pagamento
+PagamentoServiceImp --> Compra
+
+    'ITEMCOMPRA
+ItemCompraServiceImp ..|> ItemCompraService
+ItemCompraServiceImp --> ItemCompraRepository
+ItemCompraServiceImp --> CursoRepository
+ItemCompraServiceImp --> CompraRepository
+ItemCompraServiceImp --> ItemCompra
+ItemCompraServiceImp --> Curso
+ItemCompraServiceImp --> Compra
+
+    'MATRICULA
+MatriculaServiceImp ..|> MatriculaService
+MatriculaServiceImp --> MatriculaRepository
+MatriculaServiceImp --> CursoRepository
+MatriculaServiceImp --> Matricula
+MatriculaServiceImp --> Curso
+
+    'TOKEN
 TokenService ..> TokenDTO
 
 ' Controllers
 
-AuthenticationController --> TokenService
-AuthenticationController ..> LoginRequestDTO
-AuthenticationController ..> TokenDTO
-
+   'USUARIO
 UsuarioController --> UsuarioService
 UsuarioController ..> Usuario
 UsuarioController ..> UsuarioResponseDTO
 
+    'CURSO
+CursoController --> CursoService
+CursoController ..> CursoRequestDTO
+CursoController ..> CursoResponseDTO
+CursoResponseDTO ..> Curso : fromEntity()
+
+    'AULA
+AulaController --> AulaService
+AulaController ..> AulaRequestDTO
+AulaController ..> AulaResponseDTO
+AulaController ..> AtivarStatusDTO
+AulaResponseDTO ..> Aula : fromEntity()
+
+    'MATERIAL
+MaterialController --> MaterialService
+MaterialController ..> MaterialRequestDTO
+MaterialController ..> MaterialResponseDTO
+MaterialController ..> AtivarStatusDTO
+MaterialResponseDTO ..> Material : fromEntity()
+
+    'COMPRA
+CompraController --> CompraService
+CompraController --> ItemCompraService
+CompraController ..> CompraRequestDTO
+CompraController ..> CompraResponseDTO
+CompraController ..> ItemCompraRequestDTO
+CompraResponseDTO ..> Compra : fromEntity()
+
+' CompraResponseDTO agrega itens
+CompraResponseDTO    "1" o-- "0..*" ItemCompraResponseDTO : itens
+
+    'PAGAMENTO
+PagamentoController --> PagamentoService
+PagamentoController ..> PagamentoRequestDTO
+PagamentoController ..> PagamentoResponseDTO
+PagamentoController ..> AtualizarStatusPagamentoDTO
+PagamentoResponseDTO ..> Pagamento : fromEntity()
+
+    'ITEM COMPRA
+ItemCompraController --> ItemCompraService
+ItemCompraController ..> ItemCompraRequestDTO
+ItemCompraController ..> ItemCompraResponseDTO
+ItemCompraResponseDTO ..> ItemCompra : fromEntity()
+
+    'MATRICULA
+MatriculaController --> MatriculaService
+MatriculaController ..> MatriculaRequestDTO
+MatriculaController ..> MatriculaResponseDTO
+MatriculaController ..> AtivarStatusDTO
+MatriculaResponseDTO ..> Matricula : fromEntity()
+
+
+    'TOKEN
+AuthenticationController --> TokenService
+AuthenticationController ..> LoginRequestDTO
+AuthenticationController ..> TokenDTO
+
+    'PAPEL
 PapelController --> PapelService
 PapelController ..> Papel
 
@@ -254,10 +1013,25 @@ FilterChainConfig --> UsuarioService
 
 ' Front-end
 
+    'SERVICE -> API
 authService --> api
 userService --> api
 papelService --> api
+cursoService --> api
+aulaService --> api
+materialService --> api
+compraService --> api
+pagamentoService --> api
+itemCompraService --> api
+matriculaService --> api
+
+    'STORES -> SERVICES
 authStore ..> authService
+cursoStore ..> cursoService
+matriculaStore ..> matriculaService
+carrinhoStore ..> compraService
+
+    'VIEWS -> SERVICES
 
 LoginView --> authService
 LoginView --> authStore
@@ -266,21 +1040,167 @@ RegisterView --> userService
 RegisterView --> papelService
 
 UsersListView --> userService
-UsersListView --> UserTable
-UsersListView --> AppHeader
-
 UserCreateView --> userService
 UserCreateView --> papelService
-UserCreateView --> UserForm
+
+CursosListView --> cursoService
+CursoCreateView --> cursoService
+CursoEditView --> cursoService
+CursoDetailView --> cursoService
+CursoDetailView --> aulaService
+CursoDetailView --> matriculaService
+CursoDetailView --> carrinhoStore
+
+AulaCreateView --> aulaService
+AulaEditView --> aulaService
+AulaEditView --> materialService
+
+MaterialCreateView --> materialService
+MaterialEditView --> materialService
+
+CarrinhoView --> carrinhoStore
+CarrinhoView --> compraService
+CarrinhoView --> itemCompraService
+
+PagamentoView --> compraService
+PagamentoView --> pagamentoService
+PagamentoView --> matriculaService
+
+MeusCursosView --> matriculaService
+MeusCursosView --> matriculaStore
+
+MatriculasAdminView --> matriculaService
+
+    'VIEWS -> COMPONENTS
+UsersListView --> AppHeader
+UsersListView --> UserTable
 UserCreateView --> AppHeader
-
-UserEditView --> userService
-UserEditView --> papelService
-UserEditView --> UserForm
 UserEditView --> AppHeader
+UserEditView --> UserForm
 
-api ..> AuthenticationController : POST /login
-api ..> UsuarioController : /usuarios
-api ..> PapelController : /papel
+CursosListView --> AppHeader
+CursosListView --> CursoCard
+CursoCreateView --> AppHeader
+CursoCreateView --> CursoForm
+CursoEditView --> AppHeader
+CursoEditView --> CursoForm
+CursoDetailView --> AppHeader
+CursoDetailView --> AulaItem
+CursoDetailView --> StatusBadge
+
+AulaCreateView --> AppHeader
+AulaCreateView --> AulaForm
+AulaEditView --> AppHeader
+AulaEditView --> AulaForm
+AulaEditView --> MaterialItem
+
+MaterialCreateView --> AppHeader
+MaterialCreateView --> MaterialForm
+MaterialEditView --> AppHeader
+MaterialEditView --> MaterialForm
+
+CarrinhoView --> AppHeader
+CarrinhoView --> CarrinhoItem
+
+PagamentoView --> AppHeader
+PagamentoView --> PagamentoForm
+
+MeusCursosView --> AppHeader
+MeusCursosView --> CursoCard
+
+MatriculasAdminView --> AppHeader
+MatriculasAdminView --> MatriculaTable
+
+    'ROUTER -> VIEWS
+
+Router ..> LoginView
+Router ..> RegisterView
+Router ..> UsersListView
+Router ..> UserCreateView
+Router ..> UserEditView
+Router ..> CursosListView
+Router ..> CursoCreateView
+Router ..> CursoDetailView
+Router ..> CursoEditView
+Router ..> AulaCreateView
+Router ..> AulaEditView
+Router ..> MaterialCreateView
+Router ..> MaterialEditView
+Router ..> CarrinhoView
+Router ..> PagamentoView
+Router ..> MeusCursosView
+Router ..> MatriculasAdminView
+
+    'COMPONENTES --> AUTH STORE
+AppHeader --> authStore
+
+    'API --> CONTROLLERS
+'Auth 
+api ..> AuthenticationController : "POST /login"
+
+'Usuários
+api ..> UsuarioController : "POST   /usuarios/novo"
+api ..> UsuarioController : "GET    /usuarios"
+api ..> UsuarioController : "GET    /usuarios/{id}"
+api ..> UsuarioController : "PUT    /usuarios/{id}"
+api ..> UsuarioController : "DELETE /usuarios/{id}"
+
+'Papéis
+api ..> PapelController : "GET  /papel"
+api ..> PapelController : "POST /papel"
+
+'Cursos
+api ..> CursoController : "POST   /cursos"
+api ..> CursoController : "GET    /cursos"
+api ..> CursoController : "GET    /cursos/{id}"
+api ..> CursoController : "GET    /cursos/instrutor/{usuarioId}"
+api ..> CursoController : "PUT    /cursos/{id}"
+api ..> CursoController : "PATCH  /cursos/{id}/publicar"
+api ..> CursoController : "DELETE /cursos/{id}"
+
+'Aulas
+api ..> AulaController : "POST   /cursos/{cursoId}/aulas"
+api ..> AulaController : "GET    /cursos/{cursoId}/aulas"
+api ..> AulaController : "GET    /aulas/{id}"
+api ..> AulaController : "PUT    /aulas/{id}"
+api ..> AulaController : "PATCH  /aulas/{id}/status"
+api ..> AulaController : "DELETE /aulas/{id}"
+
+'Materiais
+api ..> MaterialController : "POST   /aulas/{aulaId}/materiais"
+api ..> MaterialController : "GET    /aulas/{aulaId}/materiais"
+api ..> MaterialController : "GET    /materiais/{id}"
+api ..> MaterialController : "PUT    /materiais/{id}"
+api ..> MaterialController : "PATCH  /materiais/{id}/status"
+api ..> MaterialController : "DELETE /materiais/{id}"
+
+'Compras
+api ..> CompraController : "POST   /compras/iniciar"
+api ..> CompraController : "POST   /compras/{id}/itens"
+api ..> CompraController : "POST   /compras/{id}/finalizar"
+api ..> CompraController : "GET    /compras/usuario/{usuarioId}"
+api ..> CompraController : "GET    /compras/{id}"
+api ..> CompraController : "DELETE /compras/{id}"
+
+'Pagamentos
+api ..> PagamentoController : "POST  /compras/{compraId}/pagamentos"
+api ..> PagamentoController : "GET   /pagamentos/{id}"
+api ..> PagamentoController : "GET   /compras/{compraId}/pagamentos"
+api ..> PagamentoController : "PATCH /pagamentos/{id}/status"
+api ..> PagamentoController : "POST  /pagamentos/{id}/estorno"
+
+'Itens de Compra
+api ..> ItemCompraController : "POST   /compras/{compraId}/itens"
+api ..> ItemCompraController : "GET    /compras/{compraId}/itens"
+api ..> ItemCompraController : "GET    /itens/{id}"
+api ..> ItemCompraController : "DELETE /itens/{id}"
+
+'Matrículas
+api ..> MatriculaController : "POST   /matriculas"
+api ..> MatriculaController : "GET    /matriculas/usuario/{usuarioId}"
+api ..> MatriculaController : "GET    /matriculas/{id}"
+api ..> MatriculaController : "GET    /matriculas/verificar?usuarioId=&cursoId="
+api ..> MatriculaController : "PATCH  /matriculas/{id}/status"
+api ..> MatriculaController : "DELETE /matriculas/{id}"
 
 @enduml
