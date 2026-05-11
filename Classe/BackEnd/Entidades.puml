@@ -1,0 +1,150 @@
+@startuml
+title Diagrama de Classes Entidades e Repositórios - Musicáudio
+
+!pragma layout elk
+
+left to right direction
+
+skinparam linetype ortho
+skinparam nodesep 120
+skinparam ranksep 100
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+package "model.entity" {
+
+    class Usuario <<Entity>> {
+        -id: Long
+        -nome: String
+        -sobrenome: String
+        -email: String
+        -cpf: String
+        -data_nascimento: String
+        -telefone: String
+        -senha: String
+        -data_delecao : DateTime
+        -papeis: List<Papel>
+        +getPapeisString(): List<String>
+    }
+
+    class Papel <<Entity>> {
+        -id: Long
+        -papel: String
+    }
+    
+    class Curso <<Entity>> {
+        -id: Long
+        -nome: String
+        -descricao: String
+        -preco: double
+        -imagem_capa: String
+        -nivel: String
+        -status: String
+        -data_criacao: DateTime
+        -data_atualizacao: DateTime
+        data_publicacao: DateTime
+        -data_delecao : DateTime
+    }
+
+    class Aula <<Entity>> {
+        -id: Long
+        -titulo: String
+        -descricao: String
+        -ativo: boolean
+        -data_criacao: DateTime
+        -data_atualizacao: DateTime
+        -data_delecao : DateTime
+    }
+
+    class Material <<Entity>> {
+        -id: Long
+        -titulo: String
+        -descricao: String
+        -tipo: String
+        -url_arquivo: String
+        -ativo: Boolean
+        -data_upload: DateTime
+        -data_delecao : DateTime
+    }
+
+    class Compra <<Entity>> {
+        -id: Long
+        -valor_total: float
+        -status: boolean
+        -data_compra: DateTime
+        -data_delecao : DateTime
+    }
+
+    class Pagamento <<Entity>> {
+        -id: Long
+        -metodo: String
+        -status: String
+        -codigo_transacao: Long
+        -data_delecao : DateTime
+    }
+
+    class ItemCompra <<Entity>> {
+        -id: Long
+        -preco: float
+        -data_delecao : DateTime
+    }
+
+    class Matricula <<Entity>> {
+        -id: Long
+        -data_matricula: DateTime
+        -ativo: boolean
+        -data_delecao : DateTime
+    }
+}
+
+package "model.repository" {
+
+    interface UsuarioRepository <<Repository>> {
+        +findByEmail(email: String): Usuario
+    }
+
+    interface PapelRepository <<Repository>> {
+        +findByPapelIgnoreCase(papel: String): Optional<Papel>
+    }
+
+    interface CursoRepository <<Repository>>
+
+    interface AulaRepository <<Repository>>
+
+    interface MaterialRepository <<Repository>>
+
+    interface CompraRepository <<Repository>>
+
+    interface PagamentoRepository <<Repository>>
+
+    interface ItemCompraRepository <<Repository>>
+
+    interface MatriculaRepository <<Repository>>
+
+    interface JpaRepository<T, ID> <<Spring Data>>
+}
+
+' Repositories
+
+UsuarioRepository --|> JpaRepository
+CursoRepository --|> JpaRepository
+AulaRepository --|> JpaRepository
+MaterialRepository --|> JpaRepository
+CompraRepository --|> JpaRepository
+PagamentoRepository --|> JpaRepository
+ItemCompraRepository --|> JpaRepository
+MatriculaRepository  --|> JpaRepository
+PapelRepository --|> JpaRepository
+
+UsuarioRepository ..> Usuario
+CursoRepository ..> Curso
+AulaRepository ..> Aula
+MaterialRepository ..> Material
+CompraRepository ..> Compra
+PagamentoRepository ..> Pagamento
+ItemCompraRepository ..> ItemCompra
+MatriculaRepository ..> Matricula
+PapelRepository ..> Papel
+@enduml

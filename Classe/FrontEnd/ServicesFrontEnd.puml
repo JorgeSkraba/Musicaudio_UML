@@ -1,0 +1,123 @@
+@startuml
+
+title Diagrama de Classes Services Front-End - Musicáudio
+
+!pragma layout elk
+
+left to right direction
+
+skinparam linetype ortho
+skinparam nodesep 120
+skinparam ranksep 100
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+'SERVICES FRONT-END
+package "services Vue.js" {
+
+    class api <<Axios Instance>> {
+        +baseURL: String
+        +requestInterceptor(config): config
+    }
+
+    class authService <<Service JS>> {
+        +login(dados): Promise
+    }
+
+    'USUARIO
+    class userService <<Service JS>> {
+        +criarUsuario(usuario): Promise
+        +listarUsuarios(): Promise
+        +buscarUsuarioPorId(id): Promise
+        +atualizarUsuario(id, usuario): Promise
+        +excluirUsuario(id): Promise
+    }
+
+    'CURSO
+    class cursoService <<Service JS>> {
+        +criarCurso(curso): Promise<CursoResponseDTO>
+        +listarCursos(): Promise<CursoResponseDTO[]>
+        +buscarCursoPorId(id): Promise<CursoResponseDTO>
+        +listarCursosPorInstrutor(usuarioId): Promise<CursoResponseDTO[]>
+        +atualizarCurso(id, curso): Promise<CursoResponseDTO>
+        +publicarCurso(id): Promise<CursoResponseDTO>
+        +excluirCurso(id): Promise
+    }
+
+    'AULA
+    class aulaService <<Service JS>> {
+        +criarAula(cursoId, aula): Promise<AulaResponseDTO>
+        +listarAulasPorCurso(cursoId): Promise<AulaResponseDTO[]>
+        +buscarAulaPorId(id): Promise<AulaResponseDTO>
+        +atualizarAula(id, aula): Promise<AulaResponseDTO>
+        +ativarDesativarAula(id, ativo): Promise<AulaResponseDTO>
+        +excluirAula(id): Promise
+    }
+
+    'MATERIAL
+    class materialService <<Service JS>> {
+        +criarMaterial(aulaId, material): Promise<MaterialResponseDTO>
+        +listarMateriaisPorAula(aulaId): Promise<MaterialResponseDTO[]>
+        +buscarMaterialPorId(id): Promise<MaterialResponseDTO>
+        +atualizarMaterial(id, material): Promise<MaterialResponseDTO>
+        +ativarDesativarMaterial(id, ativo): Promise<MaterialResponseDTO>
+        +excluirMaterial(id): Promise
+    }
+
+    'COMPRA
+    class compraService <<Service JS>> {
+        +iniciarCompra(usuarioId): Promise<CompraResponseDTO>
+        +adicionarItem(compraId, cursoId): Promise<CompraResponseDTO>
+        +finalizarCompra(compraId): Promise<CompraResponseDTO>
+        +listarComprasPorUsuario(usuarioId): Promise<CompraResponseDTO[]>
+        +buscarCompraPorId(id): Promise<CompraResponseDTO>
+        +cancelarCompra(id): Promise
+    }
+
+    'PAGAMNETO
+    class pagamentoService <<Service JS>> {
+        +processarPagamento(compraId, pagamento): Promise<PagamentoResponseDTO>
+        +buscarPagamentoPorId(id): Promise<PagamentoResponseDTO>
+        +listarPagamentosPorCompra(compraId): Promise<PagamentoResponseDTO[]>
+        +atualizarStatusPagamento(id, status): Promise<PagamentoResponseDTO>
+        +estornarPagamento(id): Promise<PagamentoResponseDTO>
+    }
+
+    'ITEM COMPRA
+    class itemCompraService <<Service JS>> {
+        +adicionarItem(compraId, cursoId): Promise<ItemCompraResponseDTO>
+        +listarItensPorCompra(compraId): Promise<ItemCompraResponseDTO[]>
+        +buscarItemPorId(id): Promise<ItemCompraResponseDTO>
+        +removerItem(id): Promise
+    }
+
+    'MATRICULA
+    class matriculaService <<Service JS>> {
+        +criarMatricula(usuarioId, cursoId): Promise<MatriculaResponseDTO>
+        +listarMatriculasPorUsuario(usuarioId): Promise<MatriculaResponseDTO[]>
+        +buscarMatriculaPorId(id): Promise<MatriculaResponseDTO>
+        +verificarMatricula(usuarioId, cursoId): Promise<Boolean>
+        +ativarDesativarMatricula(id, ativo): Promise<MatriculaResponseDTO>
+        +excluirMatricula(id): Promise
+    }
+
+    'PAPEL
+    class papelService <<Service JS>> {
+        +listarPapeis(): Promise
+    }
+}
+
+authService --> api
+userService --> api
+papelService --> api
+cursoService --> api
+aulaService --> api
+materialService --> api
+compraService --> api
+pagamentoService --> api
+itemCompraService --> api
+matriculaService --> api
+
+@enduml

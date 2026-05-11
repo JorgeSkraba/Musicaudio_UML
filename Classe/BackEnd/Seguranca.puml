@@ -1,0 +1,41 @@
+@startuml
+
+title Diagrama de Classes Segurança - Musicáudio
+
+package "security" {
+
+    class CustomUserDetails {
+        -usuarioService: UsuarioService
+        +CustomUserDetails(usuarioService: UsuarioService)
+        +loadUserByUsername(identificador: String): UserDetails
+    }
+
+    class SecurityFilter <<Component>> {
+        -tokenService: TokenService
+        -userDetailsService: UserDetailsService
+        +doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain): void
+        -recuperarToken(request: HttpServletRequest): String
+    }
+
+    class FilterChainConfig <<Configuration>> {
+        +securityFilterChain(http: HttpSecurity, filter: SecurityFilter): SecurityFilterChain
+        +passwordEncoder(): PasswordEncoder
+        +authencationManager(configuration: AuthenticationConfiguration): AuthenticationManager
+        +userDetailsService(usuarioService: UsuarioService): UserDetailsService
+        +corsConfigurationSource(): CorsConfigurationSource
+    }
+}
+
+' Segurança
+
+CustomUserDetails --> UsuarioService
+CustomUserDetails ..> Usuario
+
+SecurityFilter --> TokenService
+SecurityFilter --> CustomUserDetails
+
+FilterChainConfig --> SecurityFilter
+FilterChainConfig --> CustomUserDetails
+FilterChainConfig --> UsuarioService
+
+@enduml

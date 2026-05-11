@@ -1,0 +1,67 @@
+@startuml
+
+title Diagrama de Classes Stores - Musicáudio
+
+!pragma layout elk
+
+left to right direction
+
+skinparam linetype ortho
+skinparam nodesep 120
+skinparam ranksep 150
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+'PINIA STORE
+package "stores"{
+
+    'AUTH
+    class authStore <<Pinia Store>> {
+        -token: Ref<String>
+        +isAuthenticated: Computed<Boolean>
+        +setToken(newToken): void
+        +logout(): void
+    }
+
+    'CURSO
+    class cursoStore <<Pinia Store>> {
+        -cursoAtual: Ref<CursoResponseDTO>
+        -cursosInstrutor: Ref<CursoResponseDTO[]>
+        +setCursoAtual(curso): void
+        +setCursosInstrutor(cursos): void
+        +limpar(): void
+    }
+
+    'CARRINHO 
+    class carrinhoStore <<Pinia Store>> {
+        -itens: Ref<CursoResponseDTO[]>
+        -compraIdAtual: Ref<Long>
+        +totalItens: Computed<Number>
+        +valorTotal: Computed<Float>
+        +adicionarAoCarrinho(curso): void
+        +removerDoCarrinho(cursoId): void
+        +setCompraId(id): void
+        +limpar(): void
+    }
+
+    'MATRICULA
+    class matriculaStore <<Pinia Store>> {
+        -matriculas: Ref<MatriculaResponseDTO[]>
+        +cursosMatriculados: Computed<Long[]>
+        +setMatriculas(lista): void
+        +estaMatriculado(cursoId): Boolean
+        +limpar(): void
+    }
+}
+
+'STORES -> SERVICES
+authStore ..> authService
+cursoStore ..> cursoService
+matriculaStore ..> matriculaService
+carrinhoStore ..> compraService
+
+    'COMPONENTES --> AUTH STORE
+AppHeader --> authStore
+
+@enduml

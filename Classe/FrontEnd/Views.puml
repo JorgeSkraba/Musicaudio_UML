@@ -1,0 +1,131 @@
+@startuml
+
+title Diagrama de Classes Views Front-End - Musicáudio
+
+!pragma layout elk
+
+left to right direction
+
+skinparam linetype ortho
+skinparam nodesep 120
+skinparam ranksep 100
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+'VIEWS
+package "views" {
+
+    class LoginView <<Vue View>>
+    class RegisterView <<Vue View>>
+
+    class UsersListView <<Vue View>>
+    class UserCreateView <<Vue View>>
+    class UserEditView <<Vue View>>
+
+    class CursosListView <<Vue View>>
+    class CursoCreateView <<Vue View>>
+    class CursoEditView <<Vue View>>
+    class CursoDetailView <<Vue View>>
+
+    class MeusCursosView <<Vue View>> 
+
+    class AulaCreateView <<Vue View>> 
+    class AulaEditView <<Vue View>> 
+
+    class MaterialCreateView <<Vue View>>
+    class MaterialEditView <<Vue View>>
+
+    class CarrinhoView <<Vue View>>
+    class PagamentoView <<Vue View>>
+
+    class MatriculasAdminView <<Vue View>>
+
+}
+
+'ROUTER
+package "router" {
+
+    class Router <<Vue Router>> {
+        ' ── públicas ─────────────────────────
+        +/login → LoginView
+        +/cadastro → RegisterView
+        ' ── privadas (requiresAuth) ──────────
+        +/usuarios → UsersListView
+        +/usuarios/novo → UserCreateView
+        +/usuarios/editar/:id → UserEditView
+        +/cursos → CursosListView
+        +/cursos/novo → CursoCreateView
+        +/cursos/:id → CursoDetailView
+        +/cursos/:id/editar → CursoEditView
+        +/cursos/:id/aulas/nova → AulaCreateView
+        +/cursos/:id/aulas/:aulaId/editar → AulaEditView
+        +/cursos/:id/aulas/:aulaId/materiais/novo → MaterialCreateView
+        +/cursos/:id/aulas/:aulaId/materiais/:matId/editar → MaterialEditView
+        +/carrinho → CarrinhoView
+        +/compras/:id/pagamento → PagamentoView
+        +/meus-cursos → MeusCursosView
+        +/admin/matriculas → MatriculasAdminView
+        +beforeEach(): verificaToken
+    }
+}
+
+'VIEWS --> SERVICES
+LoginView --> authService
+LoginView --> authStore
+
+RegisterView --> userService
+RegisterView --> papelService
+
+UsersListView --> userService
+UserCreateView --> userService
+UserCreateView --> papelService
+
+CursosListView --> cursoService
+CursoCreateView --> cursoService
+CursoEditView --> cursoService
+CursoDetailView --> cursoService
+CursoDetailView --> aulaService
+CursoDetailView --> matriculaService
+CursoDetailView --> carrinhoStore
+
+AulaCreateView --> aulaService
+AulaEditView --> aulaService
+AulaEditView --> materialService
+
+MaterialCreateView --> materialService
+MaterialEditView --> materialService
+
+CarrinhoView --> carrinhoStore
+CarrinhoView --> compraService
+CarrinhoView --> itemCompraService
+
+PagamentoView --> compraService
+PagamentoView --> pagamentoService
+PagamentoView --> matriculaService
+
+MeusCursosView --> matriculaService
+MeusCursosView --> matriculaStore
+
+MatriculasAdminView --> matriculaService
+
+ 'ROUTER -> VIEWS
+
+Router ..> LoginView
+Router ..> RegisterView
+Router ..> UsersListView
+Router ..> UserCreateView
+Router ..> UserEditView
+Router ..> CursosListView
+Router ..> CursoCreateView
+Router ..> CursoDetailView
+Router ..> CursoEditView
+Router ..> AulaCreateView
+Router ..> AulaEditView
+Router ..> MaterialCreateView
+Router ..> MaterialEditView
+Router ..> CarrinhoView
+Router ..> PagamentoView
+Router ..> MeusCursosView
+Router ..> MatriculasAdminView
+@enduml

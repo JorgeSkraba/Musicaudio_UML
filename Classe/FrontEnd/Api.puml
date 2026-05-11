@@ -1,0 +1,82 @@
+@startuml
+
+title Diagrama de Classes Api no Back-End - Musicáudio
+
+left to right direction
+
+skinparam nodesep 200
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+   'API --> CONTROLLERS BACK-END
+'Auth 
+api ..> AuthenticationController : "POST /login"
+
+'Usuários
+api ..> UsuarioController : "POST   /usuarios/novo"
+api ..> UsuarioController : "GET    /usuarios"
+api ..> UsuarioController : "GET    /usuarios/{id}"
+api ..> UsuarioController : "PUT    /usuarios/{id}"
+api ..> UsuarioController : "DELETE /usuarios/{id}"
+
+'Papéis
+api ..> PapelController : "GET  /papel"
+api ..> PapelController : "POST /papel"
+
+'Cursos
+api ..> CursoController : "POST   /cursos"
+api ..> CursoController : "GET    /cursos"
+api ..> CursoController : "GET    /cursos/{id}"
+api ..> CursoController : "GET    /cursos/instrutor/{usuarioId}"
+api ..> CursoController : "PUT    /cursos/{id}"
+api ..> CursoController : "PATCH  /cursos/{id}/publicar"
+api ..> CursoController : "DELETE /cursos/{id}"
+
+'Aulas
+api ..> AulaController : "POST   /cursos/{cursoId}/aulas"
+api ..> AulaController : "GET    /cursos/{cursoId}/aulas"
+api ..> AulaController : "GET    /aulas/{id}"
+api ..> AulaController : "PUT    /aulas/{id}"
+api ..> AulaController : "PATCH  /aulas/{id}/status"
+api ..> AulaController : "DELETE /aulas/{id}"
+
+'Materiais
+api ..> MaterialController : "POST   /aulas/{aulaId}/materiais"
+api ..> MaterialController : "GET    /aulas/{aulaId}/materiais"
+api ..> MaterialController : "GET    /materiais/{id}"
+api ..> MaterialController : "PUT    /materiais/{id}"
+api ..> MaterialController : "PATCH  /materiais/{id}/status"
+api ..> MaterialController : "DELETE /materiais/{id}"
+
+'Compras
+api ..> CompraController : "POST   /compras/iniciar"
+api ..> CompraController : "POST   /compras/{id}/itens"
+api ..> CompraController : "POST   /compras/{id}/finalizar"
+api ..> CompraController : "GET    /compras/usuario/{usuarioId}"
+api ..> CompraController : "GET    /compras/{id}"
+api ..> CompraController : "DELETE /compras/{id}"
+
+'Pagamentos
+api ..> PagamentoController : "POST  /compras/{compraId}/pagamentos"
+api ..> PagamentoController : "GET   /pagamentos/{id}"
+api ..> PagamentoController : "GET   /compras/{compraId}/pagamentos"
+api ..> PagamentoController : "PATCH /pagamentos/{id}/status"
+api ..> PagamentoController : "POST  /pagamentos/{id}/estorno"
+
+'Itens de Compra
+api ..> ItemCompraController : "POST   /compras/{compraId}/itens"
+api ..> ItemCompraController : "GET    /compras/{compraId}/itens"
+api ..> ItemCompraController : "GET    /itens/{id}"
+api ..> ItemCompraController : "DELETE /itens/{id}"
+
+'Matrículas
+api ..> MatriculaController : "POST   /matriculas"
+api ..> MatriculaController : "GET    /matriculas/usuario/{usuarioId}"
+api ..> MatriculaController : "GET    /matriculas/{id}"
+api ..> MatriculaController : "GET    /matriculas/verificar?usuarioId=&cursoId="
+api ..> MatriculaController : "PATCH  /matriculas/{id}/status"
+api ..> MatriculaController : "DELETE /matriculas/{id}"
+
+@enduml
