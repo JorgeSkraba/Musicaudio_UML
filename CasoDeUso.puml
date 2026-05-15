@@ -1,0 +1,34 @@
+@startuml
+
+title <b> Diagrama de Caso de Uso Musicáudio </b>
+
+left to right direction
+
+'atores
+:usuario:
+
+'casos de uso
+(Gerenciar Forma de Pagamento)
+
+(Gerenciar Perfil)
+
+(Gerenciar Cursos)
+(Gerenciar Aulas)
+(Upload de Materiais)
+
+(Buscar Cursos)
+(Comprar Curso)
+(Realizar Curso)
+
+'relacionamentos
+usuario --> (Gerenciar Forma de Pagamento)
+usuario --> (Gerenciar Perfil)
+usuario --> (Gerenciar Cursos)
+usuario --> (Buscar Cursos)
+usuario --> (Realizar Curso)
+
+(Gerenciar Cursos) --> (Gerenciar Aulas) : extend
+(Gerenciar Aulas) --> (Upload de Materiais) : extend
+
+(Buscar Cursos) --> (Comprar Curso) : extend
+@enduml
