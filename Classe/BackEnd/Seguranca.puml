@@ -5,7 +5,7 @@ title Diagrama de Classes Segurança - Musicáudio
 package "security" {
 
     class CustomUserDetails {
-        -usuarioService: UsuarioService
+        -autenticacaoService: AutenticacaoService
         +CustomUserDetails(usuarioService: UsuarioService)
         +loadUserByUsername(identificador: String): UserDetails
     }
@@ -20,22 +20,22 @@ package "security" {
     class FilterChainConfig <<Configuration>> {
         +securityFilterChain(http: HttpSecurity, filter: SecurityFilter): SecurityFilterChain
         +passwordEncoder(): PasswordEncoder
-        +authencationManager(configuration: AuthenticationConfiguration): AuthenticationManager
-        +userDetailsService(usuarioService: UsuarioService): UserDetailsService
+        +authenticationManager(configuration: AuthenticationConfiguration): AuthenticationManager
+        +userDetailsService(autenticacaoService: AutenticacaoService): UserDetailsService
         +corsConfigurationSource(): CorsConfigurationSource
     }
 }
 
 ' Segurança
 
-CustomUserDetails --> UsuarioService
-CustomUserDetails ..> Usuario
+CustomUserDetails --> AutenticacaoService
+CustomUserDetails ..> Autenticacao
 
 SecurityFilter --> TokenService
 SecurityFilter --> CustomUserDetails
 
 FilterChainConfig --> SecurityFilter
 FilterChainConfig --> CustomUserDetails
-FilterChainConfig --> UsuarioService
+FilterChainConfig --> AutenticacaoService
 
 @enduml

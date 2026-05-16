@@ -19,19 +19,22 @@ package "model.entity" {
         -id: Long
         -nome: String
         -sobrenome: String
-        -email: String
         -cpf: String
         -data_nascimento: String
         -telefone: String
-        -senha: String
+        -foto_perfil : String
+        -biografia : String
+        -data_criacao : DateTime
+        -data_atuaizacao : DateTime
         -data_delecao : DateTime
-        -papeis: List<Papel>
-        +getPapeisString(): List<String>
+        -Autenticacao : Autenticacao
     }
 
-    class Papel <<Entity>> {
+    class Autenticacao <<Entity>> {
         -id: Long
-        -papel: String
+        -email:String
+        -senha: String
+        -admin: boolean
     }
     
     class Curso <<Entity>> {
@@ -44,8 +47,13 @@ package "model.entity" {
         -status: String
         -data_criacao: DateTime
         -data_atualizacao: DateTime
-        data_publicacao: DateTime
+        -data_publicacao: DateTime
         -data_delecao : DateTime
+    }
+
+    class Modulo <<Entity>> {
+        -id: Long
+        -nome: Long
     }
 
     class Aula <<Entity>> {
@@ -85,12 +93,6 @@ package "model.entity" {
         -data_delecao : DateTime
     }
 
-    class ItemCompra <<Entity>> {
-        -id: Long
-        -preco: float
-        -data_delecao : DateTime
-    }
-
     class Matricula <<Entity>> {
         -id: Long
         -data_matricula: DateTime
@@ -105,11 +107,11 @@ package "model.repository" {
         +findByEmail(email: String): Usuario
     }
 
-    interface PapelRepository <<Repository>> {
-        +findByPapelIgnoreCase(papel: String): Optional<Papel>
-    }
+    interface AutenticacaoRepository <<Repository>>
 
     interface CursoRepository <<Repository>>
+
+    interface ModuloRepository <<Repository>>
 
     interface AulaRepository <<Repository>>
 
@@ -118,8 +120,6 @@ package "model.repository" {
     interface CompraRepository <<Repository>>
 
     interface PagamentoRepository <<Repository>>
-
-    interface ItemCompraRepository <<Repository>>
 
     interface MatriculaRepository <<Repository>>
 
@@ -130,21 +130,21 @@ package "model.repository" {
 
 UsuarioRepository --|> JpaRepository
 CursoRepository --|> JpaRepository
+ModuloRepository --|> JpaRepository
 AulaRepository --|> JpaRepository
 MaterialRepository --|> JpaRepository
 CompraRepository --|> JpaRepository
 PagamentoRepository --|> JpaRepository
-ItemCompraRepository --|> JpaRepository
 MatriculaRepository  --|> JpaRepository
-PapelRepository --|> JpaRepository
+AutenticacaoRepository --|> JpaRepository
 
 UsuarioRepository ..> Usuario
 CursoRepository ..> Curso
+ModuloRepository ..> Modulo
 AulaRepository ..> Aula
 MaterialRepository ..> Material
 CompraRepository ..> Compra
 PagamentoRepository ..> Pagamento
-ItemCompraRepository ..> ItemCompra
 MatriculaRepository ..> Matricula
-PapelRepository ..> Papel
+AutenticacaoRepository ..> Autenticacao
 @enduml

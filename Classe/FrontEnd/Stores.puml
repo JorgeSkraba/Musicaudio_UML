@@ -33,18 +33,6 @@ package "stores"{
         +limpar(): void
     }
 
-    'CARRINHO 
-    class carrinhoStore <<Pinia Store>> {
-        -itens: Ref<CursoResponseDTO[]>
-        -compraIdAtual: Ref<Long>
-        +totalItens: Computed<Number>
-        +valorTotal: Computed<Float>
-        +adicionarAoCarrinho(curso): void
-        +removerDoCarrinho(cursoId): void
-        +setCompraId(id): void
-        +limpar(): void
-    }
-
     'MATRICULA
     class matriculaStore <<Pinia Store>> {
         -matriculas: Ref<MatriculaResponseDTO[]>
@@ -59,7 +47,6 @@ package "stores"{
 authStore ..> authService
 cursoStore ..> cursoService
 matriculaStore ..> matriculaService
-carrinhoStore ..> compraService
 
     'COMPONENTES --> AUTH STORE
 AppHeader --> authStore

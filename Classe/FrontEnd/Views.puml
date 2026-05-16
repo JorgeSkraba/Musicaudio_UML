@@ -70,44 +70,13 @@ package "router" {
     }
 }
 
-'VIEWS --> SERVICES
-LoginView --> authService
 LoginView --> authStore
 
-RegisterView --> userService
-RegisterView --> papelService
-
-UsersListView --> userService
-UserCreateView --> userService
-UserCreateView --> papelService
-
-CursosListView --> cursoService
-CursoCreateView --> cursoService
-CursoEditView --> cursoService
-CursoDetailView --> cursoService
-CursoDetailView --> aulaService
-CursoDetailView --> matriculaService
 CursoDetailView --> carrinhoStore
 
-AulaCreateView --> aulaService
-AulaEditView --> aulaService
-AulaEditView --> materialService
-
-MaterialCreateView --> materialService
-MaterialEditView --> materialService
-
 CarrinhoView --> carrinhoStore
-CarrinhoView --> compraService
-CarrinhoView --> itemCompraService
 
-PagamentoView --> compraService
-PagamentoView --> pagamentoService
-PagamentoView --> matriculaService
-
-MeusCursosView --> matriculaService
 MeusCursosView --> matriculaStore
-
-MatriculasAdminView --> matriculaService
 
  'ROUTER -> VIEWS
 

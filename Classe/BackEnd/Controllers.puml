@@ -16,18 +16,13 @@ skinparam shadowing false
 package "controller" {
 
     'USUARIO
-    class AuthenticationController <<RestController>> {
-        -authenticationManager: AuthenticationManager
-        -tokenService: TokenService
-        +login(dados: LoginRequestDTO): ResponseEntity<?>
-    }
-
     class UsuarioController <<RestController>> {
         -usuarioService: UsuarioService
-        +novoUsuario(usuario: Usuario): ResponseEntity<?>
+        +novoUsuario(usuario: Usuario): ResponseEntity<UsuarioResponseDTO>
         +getUsuarios(): ResponseEntity<List<UsuarioResponseDTO>>
-        +getUsuarioPorId(id: Long): ResponseEntity<?>
-        +atualizarUsuarioPorId(id: Long, usuario: Usuario): ResponseEntity<?>
+        +getUsuarioPorId(id: Long): ResponseEntity<UsuarioResponseDTO>
+        +getUsuarioPorAutenticacao(id: Long) : ResponseEntity<UsuarioResponseDTO>
+        +atualizarUsuarioPorId(id: Long, usuario: Usuario): ResponseEntity<UsuarioResponseDTO>
         +apagarUsuario(id: Long): ResponseEntity<?>
     }
 
@@ -40,18 +35,29 @@ package "controller" {
         +getCursosPorInstrutor(usuarioId: Long): ResponseEntity<List<CursoResponseDTO>>
         +atualizarCurso(id: Long, dto: CursoRequestDTO): ResponseEntity<CursoResponseDTO>
         +publicarCurso(id: Long): ResponseEntity<CursoResponseDTO>
-        +apagarCurso(id: Long): ResponseEntity<Void>
+        +apagarCurso(id: Long): ResponseEntity<?>
+    }
+
+    'MODULO
+    class ModuloController <<RestController>> {
+        -moduloService: ModuloService
+        +criarModulo(cursoId: Long, dto: ModuloRequestDTO): ResponseEntity<ModuloResponseDTO>
+        +getModulosPorCurso(cursoId: Long): ResponseEntity<List<ModuloResponseDTO>>
+        +getModuloPorId(id: Long): ResponseEntity<ModuloResponseDTO>
+        +atualizarModulo(id: Long, dto: ModuloRequestDTO): ResponseEntity<ModuloResponseDTO>
+        +ativarDesativarModulo(id: Long, dto: AtivarStatusDTO): ResponseEntity<ModuloResponseDTO>
+        +apagarModulo(id: Long): ResponseEntity<?>
     }
 
     'AULA
     class AulaController <<RestController>> {
         -aulaService: AulaService
         +criarAula(cursoId: Long, dto: AulaRequestDTO): ResponseEntity<AulaResponseDTO>
-        +getAulasPorCurso(cursoId: Long): ResponseEntity<List<AulaResponseDTO>>
+        +getAulasPorModulo(cursoId: Long): ResponseEntity<List<AulaResponseDTO>>
         +getAulaPorId(id: Long): ResponseEntity<AulaResponseDTO>
         +atualizarAula(id: Long, dto: AulaRequestDTO): ResponseEntity<AulaResponseDTO>
         +ativarDesativarAula(id: Long, dto: AtivarStatusDTO): ResponseEntity<AulaResponseDTO>
-        +apagarAula(id: Long): ResponseEntity<Void>
+        +apagarAula(id: Long): ResponseEntity<?>
     }
 
     'MATERIAL
@@ -62,18 +68,18 @@ package "controller" {
         +getMaterialPorId(id: Long): ResponseEntity<MaterialResponseDTO>
         +atualizarMaterial(id: Long, dto: MaterialRequestDTO): ResponseEntity<MaterialResponseDTO>
         +ativarDesativarMaterial(id: Long, dto: AtivarStatusDTO): ResponseEntity<MaterialResponseDTO>
-        +apagarMaterial(id: Long): ResponseEntity<Void>
+        +apagarMaterial(id: Long): ResponseEntity<?>
     }
 
     'COMPRA
     class CompraController <<RestController>> {
         -compraService: CompraService
         +iniciarCompra(dto: CompraRequestDTO): ResponseEntity<CompraResponseDTO>
-        +adicionarItem(compraId: Long, dto: ItemCompraRequestDTO): ResponseEntity<CompraResponseDTO>
+        +adicionarItem(compraId: Long, dto: CursoRequestDTO): ResponseEntity<CursoResponseDTO>
         +finalizarCompra(compraId: Long): ResponseEntity<CompraResponseDTO>
         +getComprasPorUsuario(usuarioId: Long): ResponseEntity<List<CompraResponseDTO>>
         +getCompraPorId(id: Long): ResponseEntity<CompraResponseDTO>
-        +cancelarCompra(id: Long): ResponseEntity<Void>
+        +cancelarCompra(id: Long): ResponseEntity<?>
     }
 
     'PAGAMENTO
@@ -86,15 +92,6 @@ package "controller" {
         +estornarPagamento(id: Long): ResponseEntity<PagamentoResponseDTO>
     }
 
-    'ITEM COMPRA
-    class ItemCompraController <<RestController>> {
-        -itemCompraService: ItemCompraService
-        +adicionarItem(compraId: Long, dto: ItemCompraRequestDTO): ResponseEntity<ItemCompraResponseDTO>
-        +getItensPorCompra(compraId: Long): ResponseEntity<List<ItemCompraResponseDTO>>
-        +getItemPorId(id: Long): ResponseEntity<ItemCompraResponseDTO>
-        +removerItem(id: Long): ResponseEntity<Void>
-    }
-
     'MATRICULA
     class MatriculaController <<RestController>> {
         -matriculaService: MatriculaService
@@ -103,243 +100,56 @@ package "controller" {
         +getMatriculaPorId(id: Long): ResponseEntity<MatriculaResponseDTO>
         +verificarMatricula(usuarioId: Long, cursoId: Long): ResponseEntity<Boolean>
         +ativarDesativarMatricula(id: Long, dto: AtivarStatusDTO): ResponseEntity<MatriculaResponseDTO>
-        +apagarMatricula(id: Long): ResponseEntity<Void>
+        +apagarMatricula(id: Long): ResponseEntity<?>
     }
 
-    'PAPEL
-    class PapelController <<RestController>> {
-        -papelService: PapelService
-        +listar(): ResponseEntity<?>
-        +save(papel: Papel): ResponseEntity<?>
-    }
-}
-
-package "controller.dto" {
-
-    'USUARIO
-    class LoginRequestDTO <<record>> {
-        +email: String
-        +senha: String
+    'AUTENTICACAO
+    class AutenticacaoController <<RestController>> {
+        -auttenticacaoService: AutenticacaoService
+        +novaAutenticacao(autenticacao: Autenticacao): ResponseEntity<AutenticacaoResponseDTO>
+        +getAutenticacoes(): ResponseEntity<List<AutenticacaoResponseDTO>>
+        +getAutenticacaoPorId(id: Long): ResponseEntity<AutenticacaoResponseDTO>
+        +atualizarAutenticacaoPorId(id: Long, autenticacao: Autenticacao): ResponseEntity<AutenticacaoResponseDTO>
+        +apagarAutenticacao(id: Long): ResponseEntity<?>
     }
 
-    class UsuarioResponseDTO <<record>> {
-        +id: Long
-        +nome: String
-        +sobrenome: String
-        +email: String
-        +cpf: String
-        +data_nascimento: String
-        +telefone: String
-        +fromEntity(usuario: Usuario): UsuarioResponseDTO
+    'LOGIN
+    class AuthenticationController <<RestController>> {
+        -authenticationManager: AuthenticationManager
+        -tokenService: TokenService
+        +login(dados: LoginRequestDTO): ResponseEntity<?>
     }
-
-    'CURSO
-    class CursoRequestDTO <<record>> {
-        +nome: String
-        +descricao: String
-        +preco: double
-        +imagem_capa: String
-        +nivel: String
-        +status: String
-    }
-
-    class CursoResponseDTO <<record>> {
-        +id: Long
-        +nome: String
-        +descricao: String
-        +preco: double
-        +imagem_capa: String
-        +nivel: String
-        +status: String
-        +data_criacao: DateTime
-        +data_publicacao: DateTime
-        +fromEntity(curso: Curso): CursoResponseDTO
-    }
-
-    'AULA
-    class AulaRequestDTO <<record>> {
-        +titulo: String
-        +descricao: String
-        +ativo: boolean
-    }
-
-    class AulaResponseDTO <<record>> {
-        +id: Long
-        +titulo: String
-        +descricao: String
-        +ativo: boolean
-        +data_criacao: DateTime
-        +data_atualizacao: DateTime
-        +fk_cursos_id: Long
-        +fromEntity(aula: Aula): AulaResponseDTO
-    }
-
-    'MATERIAL
-    class MaterialRequestDTO <<record>> {
-        +titulo: String
-        +descricao: String
-        +tipo: String
-        +url_arquivo: String
-        +ativo: boolean
-    }
-
-    class MaterialResponseDTO <<record>> {
-        +id: Long
-        +titulo: String
-        +descricao: String
-        +tipo: String
-        +url_arquivo: String
-        +ativo: boolean
-        +data_upload: DateTime
-        +fk_aulas_id: Long
-        +fromEntity(material: Material): MaterialResponseDTO
-    }
-
-    'COMPRA
-    class CompraRequestDTO <<record>> {
-        +fk_usuarios_id: Long
-    }
-
-    class CompraResponseDTO <<record>> {
-        +id: Long
-        +valor_total: float
-        +status: boolean
-        +data_compra: DateTime
-        +fk_usuarios_id: Long
-        +itens: List<ItemCompraResponseDTO>
-        +fromEntity(compra: Compra): CompraResponseDTO
-    }
-
-    'PAGAMENTO
-    class PagamentoRequestDTO <<record>> {
-        +metodo: String
-        +fk_compras_id: Long
-    }
-
-    class PagamentoResponseDTO <<record>> {
-        +id: Long
-        +metodo: String
-        +status: String
-        +codigo_transacao: Long
-        +fk_compras_id: Long
-        +fromEntity(pagamento: Pagamento): PagamentoResponseDTO
-    }
-
-    class AtualizarStatusPagamentoDTO <<record>> {
-        +status: String
-    }
-
-    'ITEM COMPRA
-    class ItemCompraRequestDTO <<record>> {
-        +fk_cursos_id: Long
-    }
-
-    class ItemCompraResponseDTO <<record>> {
-        +id: Long
-        +fk_cursos_id: Long
-        +fk_compras_id: Long
-        +preco: float
-        +fromEntity(item: ItemCompra): ItemCompraResponseDTO
-    }
-
-    'MATRICULA
-    class MatriculaRequestDTO <<record>> {
-        +fk_usuarios_id: Long
-        +fk_cursos_id: Long
-    }
-
-    class MatriculaResponseDTO <<record>> {
-        +id: Long
-        +data_matricula: DateTime
-        +ativo: boolean
-        +fk_usuarios_id: Long
-        +fk_cursos_id: Long
-        +fromEntity(matricula: Matricula): MatriculaResponseDTO
-    }
-
-    class AtivarStatusDTO <<record>> {
-        +ativo: boolean
-    }
-
-
-    'TOKEN
-    class TokenDTO {
-        -token: String
-        +TokenDTO(token: String)
-        +getToken(): String
-        +setToken(token: String): void
-    }
-
 }
 
 ' Controllers
 
    'USUARIO
 UsuarioController --> UsuarioService
-UsuarioController ..> Usuario
-UsuarioController ..> UsuarioResponseDTO
 
     'CURSO
 CursoController --> CursoService
-CursoController ..> CursoRequestDTO
-CursoController ..> CursoResponseDTO
-CursoResponseDTO ..> Curso : fromEntity()
+
+    'MODULO
+ModuloController --> ModuloService
 
     'AULA
 AulaController --> AulaService
-AulaController ..> AulaRequestDTO
-AulaController ..> AulaResponseDTO
-AulaController ..> AtivarStatusDTO
-AulaResponseDTO ..> Aula : fromEntity()
 
     'MATERIAL
 MaterialController --> MaterialService
-MaterialController ..> MaterialRequestDTO
-MaterialController ..> MaterialResponseDTO
-MaterialController ..> AtivarStatusDTO
-MaterialResponseDTO ..> Material : fromEntity()
 
     'COMPRA
 CompraController --> CompraService
-CompraController --> ItemCompraService
-CompraController ..> CompraRequestDTO
-CompraController ..> CompraResponseDTO
-CompraController ..> ItemCompraRequestDTO
-CompraResponseDTO ..> Compra : fromEntity()
-
-' CompraResponseDTO agrega itens
-CompraResponseDTO    "1" o-- "0..*" ItemCompraResponseDTO : itens
 
     'PAGAMENTO
 PagamentoController --> PagamentoService
-PagamentoController ..> PagamentoRequestDTO
-PagamentoController ..> PagamentoResponseDTO
-PagamentoController ..> AtualizarStatusPagamentoDTO
-PagamentoResponseDTO ..> Pagamento : fromEntity()
-
-    'ITEM COMPRA
-ItemCompraController --> ItemCompraService
-ItemCompraController ..> ItemCompraRequestDTO
-ItemCompraController ..> ItemCompraResponseDTO
-ItemCompraResponseDTO ..> ItemCompra : fromEntity()
 
     'MATRICULA
 MatriculaController --> MatriculaService
-MatriculaController ..> MatriculaRequestDTO
-MatriculaController ..> MatriculaResponseDTO
-MatriculaController ..> AtivarStatusDTO
-MatriculaResponseDTO ..> Matricula : fromEntity()
-
 
     'TOKEN
 AuthenticationController --> TokenService
-AuthenticationController ..> LoginRequestDTO
-AuthenticationController ..> TokenDTO
 
-    'PAPEL
-PapelController --> PapelService
-PapelController ..> Papel
-
-UsuarioResponseDTO ..> Usuario : fromEntity()
-
+    'AUTENTICACAO
+AutenticacaoController --> AutenticacaoService
 @enduml

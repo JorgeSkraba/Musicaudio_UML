@@ -31,6 +31,7 @@ package "services Vue.js" {
         +criarUsuario(usuario): Promise
         +listarUsuarios(): Promise
         +buscarUsuarioPorId(id): Promise
+        +buscarUsuarioPorAutenticacao(id): Promise
         +atualizarUsuario(id, usuario): Promise
         +excluirUsuario(id): Promise
     }
@@ -44,6 +45,16 @@ package "services Vue.js" {
         +atualizarCurso(id, curso): Promise<CursoResponseDTO>
         +publicarCurso(id): Promise<CursoResponseDTO>
         +excluirCurso(id): Promise
+    }
+
+   'MODULO
+    class moduloService <<Service JS>> {
+        +criarModulo(cursoId, modulo): Promise<ModuloResponseDTO>
+        +listarModulosPorCurso(cursoId): Promise<ModuloResponseDTO[]>
+        +buscarModuloPorId(id): Promise<ModuloResponseDTO>
+        +atualizarModulo(id, modulo): Promise<ModuloResponseDTO>
+        +ativarDesativarModulo(id, ativo): Promise<ModuloResponseDTO>
+        +excluirModulo(id): Promise
     }
 
     'AULA
@@ -85,14 +96,6 @@ package "services Vue.js" {
         +estornarPagamento(id): Promise<PagamentoResponseDTO>
     }
 
-    'ITEM COMPRA
-    class itemCompraService <<Service JS>> {
-        +adicionarItem(compraId, cursoId): Promise<ItemCompraResponseDTO>
-        +listarItensPorCompra(compraId): Promise<ItemCompraResponseDTO[]>
-        +buscarItemPorId(id): Promise<ItemCompraResponseDTO>
-        +removerItem(id): Promise
-    }
-
     'MATRICULA
     class matriculaService <<Service JS>> {
         +criarMatricula(usuarioId, cursoId): Promise<MatriculaResponseDTO>
@@ -103,21 +106,26 @@ package "services Vue.js" {
         +excluirMatricula(id): Promise
     }
 
-    'PAPEL
-    class papelService <<Service JS>> {
-        +listarPapeis(): Promise
+      'AUTENTICACAO
+    class autenticacaoService <<Service JS>> {
+        +criarAutenticacao(autenticacao): Promise
+        +listarAutenticacoes(): Promise
+        +buscarAutenticacaoPorId(id): Promise
+        +atualizarAutenticacao(id, autenticacao): Promise
+        +excluirAutenticacao(id): Promise
     }
+
 }
 
 authService --> api
 userService --> api
-papelService --> api
 cursoService --> api
+moduloService --> api
 aulaService --> api
 materialService --> api
 compraService --> api
 pagamentoService --> api
-itemCompraService --> api
 matriculaService --> api
+autenticacaoService --> api
 
 @enduml

@@ -3,11 +3,9 @@ title Diagrama de Classes Services - Musicáudio
 
 !pragma layout elk
 
-left to right direction
-
 skinparam linetype ortho
-skinparam nodesep 120
-skinparam ranksep 100
+'skinparam nodesep 120
+'skinparam ranksep 100
 
 skinparam classAttributeIconSize 0
 skinparam packageStyle rectangle
@@ -21,23 +19,9 @@ package "model.service" {
         +novoUsuario(usuario: Usuario): Usuario
         +getUsuarios(): List<Usuario>
         +getUsuarioPorId(id: Long): Usuario
+        +getUsuarioPorAutenticacao (id: Long): Usuario
         +atualizarUsuario(id: Long, usuario: Usuario): Usuario
         +apagarUsuario(id: Long): Boolean
-        +buscarPorEmail(email: String): Usuario
-    }
-
-    class UsuarioServiceImp <<Service>> {
-        -repository: UsuarioRepository
-        -papelRepository: PapelRepository
-        -passwordEncoder: PasswordEncoder
-        +novoUsuario(usuario: Usuario): Usuario
-        -validarUsuario(usuario: Usuario): void
-        -resolverPapeis(papeisInformados: List<Papel>, permitirPapeisInformados: boolean): List<Papel>
-        +getUsuarios(): List<Usuario>
-        +getUsuarioPorId(id: Long): Usuario
-        +atualizarUsuario(id: Long, usuarioAtualizado: Usuario): Usuario
-        +apagarUsuario(id: Long): Boolean
-        +buscarPorEmail(email: String): Usuario
     }
 
     'CURSO
@@ -51,16 +35,14 @@ package "model.service" {
         +apagarCurso(id: Long): Boolean
     }
 
-    class CursoServiceImp <<Service>> {
-        -cursoRepository: CursoRepository
-        +criarCurso(curso: Curso): Curso
-        -validarCurso(curso: Curso): void
-        +getCursos(): List<Curso>
-        +getCursoPorId(id: Long): Curso
-        +getCursosPorInstrutor(usuarioId: Long): List<Curso>
-        +atualizarCurso(id: Long, cursoAtualizado: Curso): Curso
-        +publicarCurso(id: Long): Curso
-        +apagarCurso(id: Long): Boolean
+     'MODULO 
+      interface ModuloService {
+        +criarModulo(cursoId: Long, modulo: Modulo): Modulo
+        +getModulosPorCurso(cursoId: Long): List<Modulo>
+        +getModuloPorId(id: Long): Modulo
+        +atualizarModulo(id: Long, modulo: Modulo): Modulo
+        +ativarDesativarModulo(id: Long, ativo: boolean): Modulo
+        +apagarModulo(id: Long): Boolean
     }
 
     'AULA
@@ -68,19 +50,8 @@ package "model.service" {
         +criarAula(cursoId: Long, aula: Aula): Aula
         +getAulasPorCurso(cursoId: Long): List<Aula>
         +getAulaPorId(id: Long): Aula
+        +getAulasPorModulo(moduloId: Long): List<Aula>
         +atualizarAula(id: Long, aula: Aula): Aula
-        +ativarDesativarAula(id: Long, ativo: boolean): Aula
-        +apagarAula(id: Long): Boolean
-    }
-
-    class AulaServiceImp <<Service>> {
-        -aulaRepository: AulaRepository
-        -cursoRepository: CursoRepository
-        +criarAula(cursoId: Long, aula: Aula): Aula
-        -validarCursoExistente(cursoId: Long): void
-        +getAulasPorCurso(cursoId: Long): List<Aula>
-        +getAulaPorId(id: Long): Aula
-        +atualizarAula(id: Long, aulaAtualizada: Aula): Aula
         +ativarDesativarAula(id: Long, ativo: boolean): Aula
         +apagarAula(id: Long): Boolean
     }
@@ -95,37 +66,10 @@ package "model.service" {
         +apagarMaterial(id: Long): Boolean
     }
 
-    class MaterialServiceImp <<Service>> {
-        -materialRepository: MaterialRepository
-        -aulaRepository: AulaRepository
-        +criarMaterial(aulaId: Long, material: Material): Material
-        -validarAulaExistente(aulaId: Long): void
-        -validarTipoArquivo(tipo: String): void
-        +getMateriaisPorAula(aulaId: Long): List<Material>
-        +getMaterialPorId(id: Long): Material
-        +atualizarMaterial(id: Long, materialAtualizado: Material): Material
-        +ativarDesativarMaterial(id: Long, ativo: boolean): Material
-        +apagarMaterial(id: Long): Boolean
-    }
-
     'COMPRA
     interface CompraService {
         +iniciarCompra(usuarioId: Long): Compra
         +adicionarItem(compraId: Long, cursoId: Long): Compra
-        +finalizarCompra(compraId: Long): Compra
-        +getComprasPorUsuario(usuarioId: Long): List<Compra>
-        +getCompraPorId(id: Long): Compra
-        +cancelarCompra(id: Long): Boolean
-    }
-
-    class CompraServiceImp <<Service>> {
-        -compraRepository: CompraRepository
-        -itemCompraRepository: ItemCompraRepository
-        -cursoRepository: CursoRepository
-        +iniciarCompra(usuarioId: Long): Compra
-        +adicionarItem(compraId: Long, cursoId: Long): Compra
-        -calcularValorTotal(compraId: Long): float
-        -validarCursoNaoDuplicado(compraId: Long, cursoId: Long): void
         +finalizarCompra(compraId: Long): Compra
         +getComprasPorUsuario(usuarioId: Long): List<Compra>
         +getCompraPorId(id: Long): Compra
@@ -141,40 +85,6 @@ package "model.service" {
         +estornarPagamento(id: Long): Pagamento
     }
 
-    class PagamentoServiceImp <<Service>> {
-        -pagamentoRepository: PagamentoRepository
-        -compraRepository: CompraRepository
-        -matriculaService: MatriculaService
-        +processarPagamento(compraId: Long, pagamento: Pagamento): Pagamento
-        -gerarCodigoTransacao(): Long
-        -validarMetodoPagamento(metodo: String): void
-        +getPagamentoPorId(id: Long): Pagamento
-        +getPagamentosPorCompra(compraId: Long): List<Pagamento>
-        +atualizarStatusPagamento(id: Long, status: String): Pagamento
-        -acionarMatriculaAposAprovacao(compraId: Long): void
-        +estornarPagamento(id: Long): Pagamento
-    }
-
-    'ITEM COMPRA
-    interface ItemCompraService {
-        +adicionarItem(compraId: Long, cursoId: Long): ItemCompra
-        +getItensPorCompra(compraId: Long): List<ItemCompra>
-        +getItemPorId(id: Long): ItemCompra
-        +removerItem(id: Long): Boolean
-    }
-
-    class ItemCompraServiceImp <<Service>> {
-        -itemCompraRepository: ItemCompraRepository
-        -cursoRepository: CursoRepository
-        -compraRepository: CompraRepository
-        +adicionarItem(compraId: Long, cursoId: Long): ItemCompra
-        -capturarPrecoCurso(cursoId: Long): float
-        -validarCompraAberta(compraId: Long): void
-        +getItensPorCompra(compraId: Long): List<ItemCompra>
-        +getItemPorId(id: Long): ItemCompra
-        +removerItem(id: Long): Boolean
-    }
-
     'MATRICULA
     interface MatriculaService {
         +criarMatricula(usuarioId: Long, cursoId: Long): Matricula
@@ -185,26 +95,17 @@ package "model.service" {
         +apagarMatricula(id: Long): Boolean
     }
 
-    class MatriculaServiceImp <<Service>> {
-        -matriculaRepository: MatriculaRepository
-        -cursoRepository: CursoRepository
-        +criarMatricula(usuarioId: Long, cursoId: Long): Matricula
-        -validarMatriculaDuplicada(usuarioId: Long, cursoId: Long): void
-        -validarCursoAtivo(cursoId: Long): void
-        +getMatriculasPorUsuario(usuarioId: Long): List<Matricula>
-        +getMatriculaPorId(id: Long): Matricula
-        +verificarMatricula(usuarioId: Long, cursoId: Long): boolean
-        +ativarDesativarMatricula(id: Long, ativo: boolean): Matricula
-        +apagarMatricula(id: Long): Boolean
+    ' AUTENTICACAO
+    interface AutenticacaoService {
+        +novaAutenticacao(autenticacao: Autenticacao): Autenticacao
+        +getAutenticacoes(): List<Autenticacao>
+        +getAutenticacaoPorId(id: Long): Autenticacao
+        +atualizarAutenticacao(id: Long, autenticacao: Autenticacao): Autenticacao
+        +apagarAutenticacao(id: Long): Boolean
+        +buscarPorEmail(email: String): Autenticacao
     }
 
-
-    class PapelService <<Service>> {
-        -papelRepository: PapelRepository
-        +salvarPapel(papel: Papel): Papel
-        +getPapeis(): List<Papel>
-    }
-
+   
     class TokenService <<Service>> {
         -secretKey: String
         +gerarToken(subject: String): String
@@ -216,68 +117,30 @@ package "model.service" {
 
     'USUARIO
 UsuarioServiceImp ....|> UsuarioService
-UsuarioServiceImp ----> UsuarioRepository
-UsuarioServiceImp ----> PapelRepository
-UsuarioServiceImp ----> Usuario
-UsuarioServiceImp ----> Papel
-
-    'PAPEL
-PapelService ----> PapelRepository
-PapelService ----> Papel
 
     'CURSO
 CursoServiceImp ....|> CursoService
-CursoServiceImp ----> CursoRepository
-CursoServiceImp ----> Curso
+
+    'MODULO
+ModuloServiceImp ....|> ModuloService
 
     'AULA
 AulaServiceImp ....|> AulaService
-AulaServiceImp ----> AulaRepository
-AulaServiceImp ----> CursoRepository
-AulaServiceImp ----> Aula
-AulaServiceImp ----> Curso
 
     'MATERIAL
 MaterialServiceImp ....|> MaterialService
-MaterialServiceImp ----> MaterialRepository
-MaterialServiceImp ----> AulaRepository
-MaterialServiceImp ----> Material
-MaterialServiceImp ----> Aula
 
     'COMPRA
 CompraServiceImp ....|> CompraService
-CompraServiceImp ----> CompraRepository
-CompraServiceImp ----> ItemCompraRepository
-CompraServiceImp ----> CursoRepository
-CompraServiceImp ----> Compra
-CompraServiceImp ----> ItemCompra
-CompraServiceImp ----> Curso
 
     'PAGAMENTO
 PagamentoServiceImp ...|> PagamentoService
-PagamentoServiceImp ----> PagamentoRepository
-PagamentoServiceImp ----> CompraRepository
 PagamentoServiceImp ----> MatriculaService
-PagamentoServiceImp ----> Pagamento
-PagamentoServiceImp ----> Compra
-
-    'ITEMCOMPRA
-ItemCompraServiceImp ....|> ItemCompraService
-ItemCompraServiceImp ----> ItemCompraRepository
-ItemCompraServiceImp ----> CursoRepository
-ItemCompraServiceImp ----> CompraRepository
-ItemCompraServiceImp ----> ItemCompra
-ItemCompraServiceImp ----> Curso
-ItemCompraServiceImp ----> Compra
 
     'MATRICULA
 MatriculaServiceImp ....|> MatriculaService
-MatriculaServiceImp ----> MatriculaRepository
-MatriculaServiceImp ----> CursoRepository
-MatriculaServiceImp ----> Matricula
-MatriculaServiceImp ----> Curso
 
-    'TOKEN
-TokenService ....> TokenDTO
+    'AUTENTICACAO
+AutenticacaoServiceImp ....|> AutenticacaoService
 
 @enduml
