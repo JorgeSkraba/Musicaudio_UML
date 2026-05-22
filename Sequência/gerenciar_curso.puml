@@ -1,0 +1,424 @@
+@startuml Gerenciar Curso
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 200
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupFontStyle bold
+skinparam noteFontSize 11
+skinparam ParticipantFontStyle bold
+
+title Diagrama de Sequência — Caso de Uso: Gerenciar Curso\nMusicáudio v1.0
+
+actor "Usuário" as USR
+actor "Administrador" as ADM
+
+box "Camada Vue JS" #LightGreen
+    boundary "Views JS" as VUE
+end box
+
+box "Camada de Segurança" #LightYellow
+    participant "SecurityFilter\n(JWT)" as SEC
+end box
+
+box "Camada de Controle" #LightBlue
+    control "CursoController" as CC
+end box
+
+box "Camada de Serviço" #LightPink
+    entity "AutenticacaoService" as AS
+    entity "UsuarioService" as US
+    entity "CursoService" as CS
+end box
+
+box "Camada de Persistência" #LightGrey
+    database "AutenticacaoRepository" as AR
+    database "UsuarioRepository" as UR
+    database "CursoRepository" as CR
+end box
+
+' FA1 — CADASTRAR CURSO
+
+== FA1: Cadastrar Curso ==
+note over USR: Pré-condição: autenticado via JWT
+
+USR -> VUE : Cadastrar Curso
+activate VUE
+
+VUE -> SEC : POST /cursos/novo\nAuthorization: Bearer <token>\n{ dados do curso }
+activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt S — Token inválido / sem autenticação
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CC : repassa requisição autenticada
+
+         activate CC
+    end
+deactivate SEC
+
+
+    CC -> AS : buscarAutenticacaoPorEmail(email)
+    activate AS
+        AS -> AR : findByEmail(email)
+        AR --> AS : Autenticacao
+        AS --> CC : Autenticacao
+    deactivate AS
+
+    CC -> US : getUsuarioPorAutenticacao(autenticacaoId)
+    activate US
+        US -> UR : findByAutenticacaoId(id)
+        UR --> US : Usuario
+        US --> CC : Usuario
+    deactivate US
+
+    CC -> CC : curso.setUsuario(usuario)
+
+    CC -> CS : criarCurso(curso)
+    activate CS
+        CS -> CS : validarCurso(curso)
+
+        alt S1 — Dados obrigatórios não preenchidos\n(nome, nível ou status em branco)
+            CS --> CC : IllegalArgumentException\n("Campo obrigatório!")
+            CC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else S2 — Dados inválidos (ex: preço negativo)
+            CS --> CC : IllegalArgumentException\n("Preço precisa ser 0 ou mais!")
+            CC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else Dados válidos
+            CS -> CR : save(curso)
+            CR --> CS : Curso salvo
+            CS --> CC : Curso
+                deactivate CS
+        end
+
+
+    CC --> VUE : 201 Created\n{ CursoResponseDTO }
+deactivate CC
+deactivate VUE
+
+' FA2 — EDITAR CURSO (Usuário Autenticado)
+
+== FA2: Editar Curso (Usuário Autenticado) ==
+note over USR: Pré-condição: autenticado via JWT;\no curso deve pertencer ao usuário
+
+USR -> VUE : Editar Meu Curso
+activate VUE
+
+VUE -> SEC : PUT /cursos/meus-cursos\nAuthorization: Bearer <token>\n{ dados atualizados }
+activate SEC
+    SEC -> SEC : validarToken(token)
+    SEC -> CC : repassa requisição autenticada
+deactivate SEC
+
+activate CC
+    CC -> AS : buscarAutenticacaoPorEmail(email)
+    activate AS
+        AS -> AR : findByEmail(email)
+        AR --> AS : Autenticacao
+        AS --> CC : Autenticacao
+    deactivate AS
+
+    CC -> US : getUsuarioPorAutenticacao(autenticacaoId)
+    activate US
+        US -> UR : findByAutenticacaoId(id)
+        UR --> US : Usuario
+        US --> CC : Usuario
+    deactivate US
+
+    CC -> CS : getCursosPorUsuario(usuarioId)
+    activate CS
+        CS -> CR : findCursoByUsuario_Id(usuarioId)
+        CR --> CS : List<Curso>
+        CS --> CC : List<Curso>
+    deactivate CS
+
+    alt S — Curso não pertence ao usuário
+        CC --> VUE : 400 Bad Request\n{ "Você só pode editar seus cursos!" }
+    else Curso pertence ao usuário
+
+        CC -> CS : atualizarCurso(id, cursoAtualizado)
+        activate CS
+            CS -> CS : validarCurso(cursoAtualizado)
+
+            alt S1 — Dados obrigatórios não preenchidos
+                CS --> CC : IllegalArgumentException
+                CC --> VUE : 400 Bad Request\n{ mensagem de erro }
+            else S2 — Dados inválidos
+                CS --> CC : IllegalArgumentException
+                CC --> VUE : 400 Bad Request\n{ mensagem de erro }
+            else Dados válidos
+                CS -> CS : getCursoPorId(id)
+                CS -> CR : findById(id)
+                CR --> CS : Curso atual
+                CS -> CR : save(cursoAtualizado)
+                CR --> CS : Curso atualizado
+                CS --> CC : Curso
+                     deactivate CS
+            end
+   
+
+        CC --> VUE : 200 OK\n{ CursoResponseDTO atualizado }
+        deactivate CC
+    end
+
+deactivate VUE
+
+' FA3 — PUBLICAR CURSO
+
+== FA3: Publicar Curso ==
+note over USR: Pré-condição: autenticado; curso\npertence ao usuário e possui\ndados mínimos preenchidos
+
+USR -> VUE : Publicar Curso
+activate VUE
+
+VUE -> SEC : PUT /cursos/meus-cursos\nAuthorization: Bearer <token>\n{ status: "PUBLICADO" }
+activate SEC
+    SEC -> SEC : validarToken(token)
+    SEC -> CC : repassa requisição autenticada
+deactivate SEC
+
+activate CC
+    CC -> CS : getCursosPorUsuario(usuarioId)
+    activate CS
+        CS -> CR : findCursoByUsuario_Id(usuarioId)
+        CR --> CS : List<Curso>
+        CS --> CC : List<Curso>
+    deactivate CS
+
+    alt S — Curso não pertence ao usuário
+        CC --> VUE : 400 Bad Request\n{ "Você só pode editar seus cursos!" }
+    else Curso pertence ao usuário
+        CC -> CS : atualizarCurso(id, cursoAtualizado)
+        activate CS
+        CS -> CS : validarCurso(cursoAtualizado)
+
+        alt S4 — Curso incompleto para publicação\n(campos mínimos ausentes)
+            CS --> CC : IllegalArgumentException\n("Dados mínimos não preenchidos!")
+            CC --> VUE : 400 Bad Request\n{ "Curso permanece como rascunho" }
+        else Curso apto para publicação
+            CS -> CR : save(curso com status "PUBLICADO")
+            CR --> CS : Curso atualizado
+            CS --> CC : Curso
+                  deactivate CS
+            CC --> VUE : 200 OK\n{ CursoResponseDTO com status PUBLICADO }
+            deactivate CC
+        end
+    end
+deactivate VUE
+
+' FA4 — DESPUBLICAR CURSO
+
+== FA4: Despublicar Curso ==
+note over USR: Pré-condição: autenticado;\ncurso pertence ao usuário\ne está publicado
+
+USR -> VUE : Despublicar Curso
+activate VUE
+
+VUE -> SEC : PUT /cursos/meus-cursos\nAuthorization: Bearer <token>\n{ status: "RASCUNHO" }
+activate SEC
+    SEC -> SEC : validarToken(token)
+    SEC -> CC : repassa requisição autenticada
+deactivate SEC
+
+activate CC
+    CC -> CS : getCursosPorUsuario(usuarioId)
+    activate CS
+        CS -> CR : findCursoByUsuario_Id(usuarioId)
+        CR --> CS : List<Curso>
+        CS --> CC : List<Curso>
+    deactivate CS
+  alt S — Curso não pertence ao usuário
+        CC --> VUE : 400 Bad Request\n{ "Você só pode editar seus cursos!" }
+    else Curso pertence ao usuário
+        CC -> CS : atualizarCurso(id, cursoAtualizado)
+        activate CS
+        CS -> CS : validarCurso(cursoAtualizado)
+
+        alt S4 — Curso incompleto para publicação\n(campos mínimos ausentes)
+            CS --> CC : IllegalArgumentException\n("Dados mínimos não preenchidos!")
+            CC --> VUE : 400 Bad Request\n{ "Curso permanece publicado" }
+        else Curso apto para despublicar
+            CS -> CR : save(curso com status "RASCUNHO")
+            CR --> CS : Curso atualizado
+            CS --> CC : Curso
+                 deactivate CS
+            CC --> VUE : 200 OK\n{ CursoResponseDTO com status RASCUNHO }
+            deactivate CC
+        end
+    end
+
+deactivate VUE
+note over VUE: Curso removido da área pública;\npermanece acessível na área\nde gerenciamento do usuário\nalém de ser visualizado por\nquem comprou
+
+' FA5 — REMOVER CURSO (Usuário Autenticado)
+
+== FA5: Remover Curso (Usuário Autenticado) ==
+note over USR: Pré-condição: autenticado;\ncurso pertence ao usuário
+
+USR -> VUE : Remover Meu Curso
+activate VUE
+
+VUE -> SEC : DELETE /cursos/meus-cursos/{id}\nAuthorization: Bearer <token>
+activate SEC
+    SEC -> SEC : validarToken(token)
+    SEC -> CC : repassa requisição autenticada
+deactivate SEC
+
+activate CC
+    CC -> CS : getCursoPorId(id)
+    activate CS
+        CS -> CR : findById(id)
+        CR --> CS : Curso
+        CS --> CC : Curso
+    deactivate CS
+
+    CC -> AS : buscarAutenticacaoPorEmail(email)
+    activate AS
+        AS -> AR : findByEmail(email)
+        AR --> AS : Autenticacao
+        AS --> CC : Autenticacao
+    deactivate AS
+
+    CC -> US : getUsuarioPorAutenticacao(autenticacaoId)
+    activate US
+        US -> UR : findByAutenticacaoId(id)
+        UR --> US : Usuario
+        US --> CC : Usuario
+    deactivate US
+
+    CC -> CS : getCursosPorUsuario(usuarioId)
+    activate CS
+        CS -> CR : findCursoByUsuario_Id(usuarioId)
+        CR --> CS : List<Curso>
+        CS --> CC : List<Curso>
+    deactivate CS
+
+    alt S — Curso não pertence ao usuário
+        CC --> VUE : 400 Bad Request\n{ "Você só pode editar seus cursos!" }
+    else S3 — Curso possui alunos ou compras vinculadas
+        CC --> VUE : 400 Bad Request\n{ "Exclusão impedida: despublique\nou inative o curso" }
+    else Curso sem vínculos
+        CC -> CS : apagarCurso(id)
+        activate CS
+            CS -> CR : existsById(id)
+            CR --> CS : true
+            CS -> CR : deleteById(id)
+            CR --> CS : OK
+            CS --> CC : true
+        deactivate CS
+        CC --> VUE : 204 No Content
+        deactivate CC
+    end
+deactivate VUE
+
+' FA2-Admin — LISTAR TODOS OS CURSOS
+
+== FA2-Admin: Listar Todos os Cursos ==
+note over ADM: Pré-condição: autenticado como ADMIN
+
+ADM -> VUE : Listar Cursos
+activate VUE
+
+VUE -> SEC : GET /cursos\nAuthorization: Bearer <token>
+activate SEC
+    SEC -> SEC : validarToken(token)
+
+    alt S — Usuário sem permissão de admin
+        SEC --> VUE : 403 Forbidden
+    else Admin autenticado
+        SEC -> CC : repassa requisição
+        activate CC
+    end
+deactivate SEC
+
+
+    CC -> CS : getCursos()
+    activate CS
+        CS -> CR : findAll()
+        CR --> CS : List<Curso>
+        CS --> CC : List<Curso>
+    deactivate CS
+
+    CC --> VUE : 200 OK\n{ List<CursoResponseDTO> }
+deactivate CC
+deactivate VUE
+
+' FA3-Admin — EDITAR QUALQUER CURSO
+
+== FA3-Admin: Editar Qualquer Curso ==
+note over ADM: Pré-condição: autenticado como ADMIN
+
+ADM -> VUE : Editar Curso
+activate VUE
+
+VUE -> SEC : PUT /cursos/{id}\nAuthorization: Bearer <token>\n{ dados atualizados }
+activate SEC
+    SEC -> SEC : validarToken(token)
+    SEC -> CC : repassa requisição
+deactivate SEC
+
+activate CC
+
+    CC -> CS : atualizarCurso(id, cursoAtualizado)
+    activate CS
+        CS -> CS : validarCurso(cursoAtualizado)
+
+        alt S1 — Dados obrigatórios não preenchidos
+            CS --> CC : IllegalArgumentException
+            CC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else S2 — Dados inválidos
+            CS --> CC : IllegalArgumentException
+            CC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else Dados válidos
+            CS -> CS : getCursoPorId(id)
+            CS -> CR : findById(id)
+            CR --> CS : Curso atual
+            CS -> CR : save(curso)
+            CR --> CS : Curso atualizado
+            CS --> CC : Curso
+               deactivate CS
+            CC --> VUE : 200 OK\n{ CursoResponseDTO atualizado }
+            deactivate CC
+        end
+deactivate VUE
+
+' FA4-Admin — REMOVER QUALQUER CURSO
+
+== FA4-Admin: Remover Qualquer Curso ==
+note over ADM: Pré-condição: autenticado como ADMIN
+
+ADM -> VUE : Remover Curso
+activate VUE
+
+VUE -> SEC : DELETE /cursos/{id}\nAuthorization: Bearer <token>
+activate SEC
+    SEC -> SEC : validarToken(token)
+    SEC -> CC : repassa requisição
+deactivate SEC
+
+activate CC
+    CC -> CS : apagarCurso(id)
+    activate CS
+        CS -> CR : existsById(id)
+
+        alt Curso não encontrado
+            CR --> CS : false
+            CS --> CC : IllegalArgumentException\n("Curso não encontrado")
+            CC --> VUE : 400 Bad Request\n{ "Curso não encontrado" }
+        else Curso existe
+            CR --> CS : true
+            CS -> CR : deleteById(id)
+            CR --> CS : OK
+            CS --> CC : true
+               deactivate CS
+            CC --> VUE : 204 No Content
+               deactivate CC
+        end
+ 
+
+deactivate VUE
+
+@enduml
