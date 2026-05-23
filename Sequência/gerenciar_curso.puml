@@ -49,7 +49,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S1 — Token inválido / sem autenticação
+    alt #white S1 — Token inválido / sem autenticação
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
@@ -78,7 +78,7 @@ activate SEC
     activate CS
         CS -> CS : validarCurso(curso)
 
-        alt S1 — Dados obrigatórios não preenchidos
+        alt #white S1 — Dados obrigatórios não preenchidos
             CS --> CC : IllegalArgumentException
             CC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else S2 — Dados inválidos
@@ -107,7 +107,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S1 — Token inválido / sem autenticação
+    alt #white S1 — Token inválido / sem autenticação
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
@@ -138,7 +138,7 @@ activate SEC
         CS --> CC : List<Curso>
     deactivate CS
 
-    alt S — Curso não pertence ao usuário
+    alt #white S1 — Curso não pertence ao usuário
         CC --> VUE : 400 Bad Request\n{ "Você só pode editar seus cursos!" }
     else Curso pertence ao usuário
 
@@ -146,7 +146,7 @@ activate SEC
         activate CS
             CS -> CS : validarCurso(cursoAtualizado)
 
-            alt S1 — Dados obrigatórios não preenchidos
+            alt #WhiteSmoke S1 — Dados obrigatórios não preenchidos
                 CS --> CC : IllegalArgumentException
                 CC --> VUE : 400 Bad Request\n{ mensagem de erro }
             else S2 — Dados inválidos
@@ -180,7 +180,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S1 — Token inválido / sem autenticação
+    alt #white S1 — Token inválido / sem autenticação
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
@@ -196,14 +196,14 @@ activate SEC
         CS --> CC : List<Curso>
     deactivate CS
 
-    alt S — Curso não pertence ao usuário
+    alt #white S1 — Curso não pertence ao usuário
         CC --> VUE : 400 Bad Request\n{ "Você só pode editar seus cursos!" }
     else Curso pertence ao usuário
         CC -> CS : atualizarCurso(id, cursoAtualizado)
         activate CS
         CS -> CS : validarCurso(cursoAtualizado)
 
-        alt S4 — Curso incompleto para publicação\n(campos mínimos ausentes)
+        alt #whiteSmoke S1 — Curso incompleto para publicação\n(campos mínimos ausentes)
             CS --> CC : IllegalArgumentException\n("Dados mínimos não preenchidos!")
             CC --> VUE : 400 Bad Request\n{ "Curso permanece como rascunho" }
         else Curso apto para publicação
@@ -230,7 +230,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S1 — Token inválido / sem autenticação
+    alt #white S1 — Token inválido / sem autenticação
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
@@ -246,14 +246,14 @@ activate CC
         CR --> CS : List<Curso>
         CS --> CC : List<Curso>
     deactivate CS
-  alt S — Curso não pertence ao usuário
+  alt #white S1 — Curso não pertence ao usuário
         CC --> VUE : 400 Bad Request\n{ "Você só pode editar seus cursos!" }
     else Curso pertence ao usuário
         CC -> CS : atualizarCurso(id, cursoAtualizado)
         activate CS
         CS -> CS : validarCurso(cursoAtualizado)
 
-        alt S4 — Curso incompleto para publicação\n(campos mínimos ausentes)
+        alt #whiteSmoke S1 — Curso incompleto para publicação\n(campos mínimos ausentes)
             CS --> CC : IllegalArgumentException\n("Dados mínimos não preenchidos!")
             CC --> VUE : 400 Bad Request\n{ "Curso permanece publicado" }
         else Curso apto para despublicar
@@ -282,7 +282,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S1 — Token inválido / sem autenticação
+    alt #white S1 — Token inválido / sem autenticação
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
@@ -320,9 +320,9 @@ activate CC
         CS --> CC : List<Curso>
     deactivate CS
 
-    alt S — Curso não pertence ao usuário
+    alt #white S1 — Curso não pertence ao usuário
         CC --> VUE : 400 Bad Request\n{ "Você só pode editar seus cursos!" }
-    else S3 — Curso possui alunos ou compras vinculadas
+    else S2 — Curso possui alunos ou compras vinculadas
         CC --> VUE : 400 Bad Request\n{ "Exclusão impedida: despublique\no curso" }
     else Curso sem vínculos
         CC -> CS : apagarCurso(id)

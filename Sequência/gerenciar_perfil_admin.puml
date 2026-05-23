@@ -48,7 +48,7 @@ activate VUE
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S3 — Token inválido / sem permissão
+    alt #white S1 — Token inválido / sem permissão
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
@@ -85,7 +85,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S3 — Token inválido / sem permissão
+    alt #white S1 — Token inválido / sem permissão
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
@@ -124,7 +124,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S3 — Token inválido / sem permissão
+    alt #white S1 — Token inválido / sem permissão
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
@@ -138,7 +138,7 @@ activate CAC
     activate AS
         AS -> AS : validarAutenticacao(autenticacaoAtualizada)
 
-        alt S1 - Dados obrigatórios não informados
+        alt #white S1 - Dados obrigatórios não informados
             AS --> CAC : IllegalArgumentException
             CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else Dados válidos
@@ -160,7 +160,7 @@ activate CAC
     activate US
 
         US -> US : validarUsuario(usuarioAtualizado)
-         alt S1 - Dados obrigatórios não informados
+         alt #WhiteSmoke S1 - Dados obrigatórios não informados
             US --> CAC : IllegalArgumentException
             CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else Dados válidos
@@ -186,7 +186,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S3 — Token inválido / sem permissão
+    alt #white S1 — Token inválido / sem permissão
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)

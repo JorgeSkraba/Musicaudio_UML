@@ -49,7 +49,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S1 - Token inválido / sem autenticação
+    alt #white S1 - Token inválido / sem autenticação
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
@@ -80,7 +80,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S1 - Token inválido / sem autenticação
+    alt #white S1 - Token inválido / sem autenticação
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
@@ -91,7 +91,7 @@ activate SEC
 CC -> CS : getCursoPorId(id)
 activate CS
 CS -> CR : findById(id)
-    alt Curso não encontrado
+    alt #white S1 - Curso não encontrado
             CR --> CS : EntityNotFoundException
             CS --> CC : EntityNotFoundException\n("Curso não encontrado")
             CC --> VUE : 400 Bad Request\n{ "Curso não encontrado" }
@@ -117,7 +117,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S1 - Token inválido / sem autenticação
+    alt #white S1 - Token inválido / sem autenticação
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
@@ -132,7 +132,7 @@ activate CC
     activate CS
         CS -> CS : validarCurso(cursoAtualizado)
 
-        alt S1 - Dados obrigatórios não preenchidos
+        alt #white S1 - Dados obrigatórios não preenchidos
             CS --> CC : IllegalArgumentException
             CC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else S2 - Dados inválidos
@@ -164,7 +164,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S1 - Token inválido / sem autenticação
+    alt #white S1 - Token inválido / sem autenticação
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
@@ -178,7 +178,7 @@ activate CC
     activate CS
         CS -> CR : existsById(id)
 
-        alt Curso não encontrado
+        alt #white S1 - Curso não encontrado
             CR --> CS : false
             CS --> CC : IllegalArgumentException\n("Curso não encontrado")
             CC --> VUE : 400 Bad Request\n{ "Curso não encontrado" }

@@ -50,7 +50,7 @@ activate CC
 
         AS -> AS : validarAutenticacao(autenticacao)
 
-        alt S1 - Dados obrigatórios não informados
+        alt #white S1 - Dados obrigatórios não informados
             AS --> CC : IllegalArgumentException\n("Email/Senha é obrigatório!")
             CC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else S2 - Dados inválidos
@@ -70,7 +70,7 @@ activate CC
    activate US
 
         US -> US : validarUsuario(usuario)
-         alt S1 - Dados obrigatórios não informados
+         alt #WhiteSmoke S1 - Dados obrigatórios não informados
             US --> CC : IllegalArgumentException
             CC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else Dados válidos
@@ -97,7 +97,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S1 - Token inválido / sem permissão
+    alt #white S1 - Token inválido / sem permissão
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
@@ -138,7 +138,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S1 - Token inválido / sem permissão
+    alt #white S1 - Token inválido / sem permissão
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
@@ -153,7 +153,7 @@ activate SEC
         AR --> AS : Autenticacao atual
         AS -> AS : validarAutenticacao(autenticacaoAtualizada)
 
-        alt S1 - Dados obrigatórios não informados
+        alt #white S1 - Dados obrigatórios não informados
             AS --> CC : IllegalArgumentException
             CC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else S2 - Dados inválidos
@@ -174,7 +174,7 @@ activate SEC
         CC -> US : atualizarUsuario(usuarioId, usuarioAtualizado)
 
             US -> US : validarUsuario(usuarioAtualizado)
-         alt S1 - Dados obrigatórios não informados
+         alt #WhiteSmoke S1 - Dados obrigatórios não informados
             US --> CC : IllegalArgumentException
             CC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else Dados válidos
@@ -203,7 +203,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S1 - Token inválido / sem permissão
+    alt #white S1 - Token inválido / sem permissão
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
