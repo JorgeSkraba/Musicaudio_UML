@@ -8,7 +8,7 @@ skinparam sequenceGroupFontStyle bold
 skinparam noteFontSize 11
 skinparam ParticipantFontStyle bold
 
-title Diagrama de Sequência — Caso de Uso: Gerenciar Perfil\nMusicáudio v1.0
+title Diagrama de Sequência - Caso de Uso: Gerenciar Perfil\nMusicáudio v1.0
 
 actor "Usuário" as USR
 
@@ -34,7 +34,7 @@ box "Camada de Persistência" #LightGrey
     database "UsuarioRepository" as UR
 end box
 
-' FA1 — CADASTRAR PERFIL
+' FA1 - CADASTRAR PERFIL
 
 == FA1: Cadastrar Perfil ==
 note over USR: Pré-condição: não necessita\nestar autenticado
@@ -50,22 +50,19 @@ activate CC
 
         AS -> AS : validarAutenticacao(autenticacao)
 
-        alt S1 — Dados obrigatórios não informados
+        alt S1 - Dados obrigatórios não informados
             AS --> CC : IllegalArgumentException\n("Email/Senha é obrigatório!")
             CC --> VUE : 400 Bad Request\n{ mensagem de erro }
-        else S2 — E-mail já cadastrado
-            AS -> AR : findByEmail(email)
-            AR --> AS : Autenticacao existente
-            AS --> CC : Exception("E-mail já em uso")
-            CC --> VUE : 400 Bad Request\n{ "E-mail já em uso" }
+        else S2 - Dados inválidos
+            AS --> CC : IllegalArgumentException
+            CC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else Dados válidos
             AS -> AS : passwordEncoder.encode(senha)
             AS -> AS : autenticacao.setAdmin(false)
             AS -> AR : save(autenticacao)
             AR --> AS : Autenticacao salva
             AS --> CC : Autenticacao
-        end
-
+       
     deactivate AS
 
     CC -> US : novoUsuario(usuario)
@@ -74,27 +71,19 @@ activate CC
 
         US -> US : validarUsuario(usuario)
          alt S1 - Dados obrigatórios não informados
-            US --> CAC : IllegalArgumentException
-            CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
+            US --> CC : IllegalArgumentException
+            CC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else Dados válidos
-         US -> UR : save(usuarioAtualizado)
-         UR --> US : Usuario atualizado
-         US --> CAC : Usuario
+         US -> UR : save(usuario)
+         UR --> US : Usuario salvo
+         US --> CC : Usuario
+          deactivate US
+             CC --> VUE : 201 Created\n{ ContaResponseDTO }
+             deactivate CC
         end
-
-    deactivate US
-
-    activate US
-        US -> UR : save(usuario)
-        UR --> US : Usuario salvo
-        US --> CC : Usuario
-    deactivate US
-
-    CC --> VUE : 201 Created\n{ ContaResponseDTO }
-
-deactivate CC
+    end
 deactivate VUE
-' FA2 — VISUALIZAR PERFIL (usuário comum)
+' FA2 - VISUALIZAR PERFIL (usuário comum)
 
 == FA2: Visualizar Perfil (Usuário Autenticado) ==
 note over USR: Pré-condição: autenticado via JWT
@@ -108,7 +97,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S3 — Token inválido / sem permissão
+    alt S1 - Token inválido / sem permissão
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
@@ -136,7 +125,7 @@ deactivate CC
 
 deactivate VUE
 
-' FA3 — EDITAR PERFIL (usuário comum)
+' FA3 - EDITAR PERFIL (usuário comum)
 
 == FA3: Editar Perfil (Usuário Autenticado) ==
 
@@ -149,7 +138,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S3 — Token inválido / sem permissão
+    alt S1 - Token inválido / sem permissão
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
@@ -162,41 +151,49 @@ activate SEC
     activate AS
         AS -> AR : findByEmail(emailLogado)
         AR --> AS : Autenticacao atual
-        AS -> AS : validarAutenticacao(autenticacao)
+        AS -> AS : validarAutenticacao(autenticacaoAtualizada)
 
-        alt S1 — Dados obrigatórios não informados
+        alt S1 - Dados obrigatórios não informados
+            AS --> CC : IllegalArgumentException
+            CC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else S2 - Dados inválidos
             AS --> CC : IllegalArgumentException
             CC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else Dados válidos
             AS -> AS : passwordEncoder.encode(novaSenha)\n[se senha informada]
-            AS -> AR : save(autenticacaoAtualizada)
+            AS -> AR : save(autenticacao)
             AR --> AS : Autenticacao atualizada
             AS --> CC : Autenticacao
-        end
     deactivate AS
 
     CC -> US : getUsuarioPorAutenticacao(autenticacaoId)
     activate US
         US -> UR : findByAutenticacaoId(id)
-        UR --> US : Usuario
+        UR --> US : Usuario atual
         US --> CC : Usuario
-    deactivate US
+        CC -> US : atualizarUsuario(usuarioId, usuarioAtualizado)
 
-    CC -> US : atualizarUsuario(usuarioId, usuarioAtualizado)
-    activate US
+            US -> US : validarUsuario(usuarioAtualizado)
+         alt S1 - Dados obrigatórios não informados
+            US --> CC : IllegalArgumentException
+            CC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else Dados válidos
+
         US -> UR : save(usuarioAtualizado)
         UR --> US : Usuario atualizado
         US --> CC : Usuario
     deactivate US
 
     CC --> VUE : 200 OK\n{ ContaResponseDTO atualizado }
-deactivate CC
+    deactivate CC
+    end
+ end
 deactivate VUE
-' FA4 — REMOVER PERFIL (usuário comum)
+' FA4 - REMOVER PERFIL (usuário comum)
 
 == FA4: Remover Perfil (Usuário Autenticado) ==
 
-note over USR, VUE: S4 — Confirmação de remoção:\nrecomenda-se confirmação no frontend\nantes de enviar a requisição
+note over USR, VUE: S4 - Confirmação de remoção:\nrecomenda-se confirmação no frontend\nantes de enviar a requisição
 
 USR -> VUE : Excluir Conta
 activate VUE
@@ -206,7 +203,7 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S3 — Token inválido / sem permissão
+    alt S1 - Token inválido / sem permissão
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)

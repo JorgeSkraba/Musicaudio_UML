@@ -11,7 +11,6 @@ skinparam ParticipantFontStyle bold
 title Diagrama de Sequência — Caso de Uso: Gerenciar Curso\nMusicáudio v1.0
 
 actor "Usuário" as USR
-actor "Administrador" as ADM
 
 box "Camada Vue JS" #LightGreen
     boundary "Views JS" as VUE
@@ -50,16 +49,14 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S — Token inválido / sem autenticação
+    alt S1 — Token inválido / sem autenticação
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
         SEC -> CC : repassa requisição autenticada
-
+         deactivate SEC
          activate CC
     end
-deactivate SEC
-
 
     CC -> AS : buscarAutenticacaoPorEmail(email)
     activate AS
@@ -81,22 +78,20 @@ deactivate SEC
     activate CS
         CS -> CS : validarCurso(curso)
 
-        alt S1 — Dados obrigatórios não preenchidos\n(nome, nível ou status em branco)
-            CS --> CC : IllegalArgumentException\n("Campo obrigatório!")
+        alt S1 — Dados obrigatórios não preenchidos
+            CS --> CC : IllegalArgumentException
             CC --> VUE : 400 Bad Request\n{ mensagem de erro }
-        else S2 — Dados inválidos (ex: preço negativo)
-            CS --> CC : IllegalArgumentException\n("Preço precisa ser 0 ou mais!")
+        else S2 — Dados inválidos
+            CS --> CC : IllegalArgumentException
             CC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else Dados válidos
             CS -> CR : save(curso)
             CR --> CS : Curso salvo
             CS --> CC : Curso
                 deactivate CS
+            CC --> VUE : 201 Created\n{ CursoResponseDTO }
+            deactivate CC
         end
-
-
-    CC --> VUE : 201 Created\n{ CursoResponseDTO }
-deactivate CC
 deactivate VUE
 
 ' FA2 — EDITAR CURSO (Usuário Autenticado)
@@ -109,11 +104,19 @@ activate VUE
 
 VUE -> SEC : PUT /cursos/meus-cursos\nAuthorization: Bearer <token>\n{ dados atualizados }
 activate SEC
-    SEC -> SEC : validarToken(token)
-    SEC -> CC : repassa requisição autenticada
-deactivate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
 
-activate CC
+    alt S1 — Token inválido / sem autenticação
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CC : repassa requisição autenticada
+         deactivate SEC
+         activate CC
+    end
+
+
     CC -> AS : buscarAutenticacaoPorEmail(email)
     activate AS
         AS -> AR : findByEmail(email)
@@ -153,15 +156,13 @@ activate CC
                 CS -> CS : getCursoPorId(id)
                 CS -> CR : findById(id)
                 CR --> CS : Curso atual
-                CS -> CR : save(cursoAtualizado)
+                CS -> CR : save(curso)
                 CR --> CS : Curso atualizado
                 CS --> CC : Curso
                      deactivate CS
+                 CC --> VUE : 200 OK\n{ CursoResponseDTO atualizado }
+                   deactivate CC
             end
-   
-
-        CC --> VUE : 200 OK\n{ CursoResponseDTO atualizado }
-        deactivate CC
     end
 
 deactivate VUE
@@ -176,11 +177,18 @@ activate VUE
 
 VUE -> SEC : PUT /cursos/meus-cursos\nAuthorization: Bearer <token>\n{ status: "PUBLICADO" }
 activate SEC
-    SEC -> SEC : validarToken(token)
-    SEC -> CC : repassa requisição autenticada
-deactivate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
 
-activate CC
+    alt S1 — Token inválido / sem autenticação
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CC : repassa requisição autenticada
+        deactivate SEC
+         activate CC
+    end
+
     CC -> CS : getCursosPorUsuario(usuarioId)
     activate CS
         CS -> CR : findCursoByUsuario_Id(usuarioId)
@@ -219,9 +227,17 @@ activate VUE
 
 VUE -> SEC : PUT /cursos/meus-cursos\nAuthorization: Bearer <token>\n{ status: "RASCUNHO" }
 activate SEC
-    SEC -> SEC : validarToken(token)
-    SEC -> CC : repassa requisição autenticada
-deactivate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt S1 — Token inválido / sem autenticação
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CC : repassa requisição autenticada
+         deactivate SEC
+         activate CC
+    end
 
 activate CC
     CC -> CS : getCursosPorUsuario(usuarioId)
@@ -263,9 +279,17 @@ activate VUE
 
 VUE -> SEC : DELETE /cursos/meus-cursos/{id}\nAuthorization: Bearer <token>
 activate SEC
-    SEC -> SEC : validarToken(token)
-    SEC -> CC : repassa requisição autenticada
-deactivate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt S1 — Token inválido / sem autenticação
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CC : repassa requisição autenticada
+         deactivate SEC
+         activate CC
+    end
 
 activate CC
     CC -> CS : getCursoPorId(id)
@@ -299,7 +323,7 @@ activate CC
     alt S — Curso não pertence ao usuário
         CC --> VUE : 400 Bad Request\n{ "Você só pode editar seus cursos!" }
     else S3 — Curso possui alunos ou compras vinculadas
-        CC --> VUE : 400 Bad Request\n{ "Exclusão impedida: despublique\nou inative o curso" }
+        CC --> VUE : 400 Bad Request\n{ "Exclusão impedida: despublique\no curso" }
     else Curso sem vínculos
         CC -> CS : apagarCurso(id)
         activate CS
@@ -312,113 +336,6 @@ activate CC
         CC --> VUE : 204 No Content
         deactivate CC
     end
-deactivate VUE
-
-' FA2-Admin — LISTAR TODOS OS CURSOS
-
-== FA2-Admin: Listar Todos os Cursos ==
-note over ADM: Pré-condição: autenticado como ADMIN
-
-ADM -> VUE : Listar Cursos
-activate VUE
-
-VUE -> SEC : GET /cursos\nAuthorization: Bearer <token>
-activate SEC
-    SEC -> SEC : validarToken(token)
-
-    alt S — Usuário sem permissão de admin
-        SEC --> VUE : 403 Forbidden
-    else Admin autenticado
-        SEC -> CC : repassa requisição
-        activate CC
-    end
-deactivate SEC
-
-
-    CC -> CS : getCursos()
-    activate CS
-        CS -> CR : findAll()
-        CR --> CS : List<Curso>
-        CS --> CC : List<Curso>
-    deactivate CS
-
-    CC --> VUE : 200 OK\n{ List<CursoResponseDTO> }
-deactivate CC
-deactivate VUE
-
-' FA3-Admin — EDITAR QUALQUER CURSO
-
-== FA3-Admin: Editar Qualquer Curso ==
-note over ADM: Pré-condição: autenticado como ADMIN
-
-ADM -> VUE : Editar Curso
-activate VUE
-
-VUE -> SEC : PUT /cursos/{id}\nAuthorization: Bearer <token>\n{ dados atualizados }
-activate SEC
-    SEC -> SEC : validarToken(token)
-    SEC -> CC : repassa requisição
-deactivate SEC
-
-activate CC
-
-    CC -> CS : atualizarCurso(id, cursoAtualizado)
-    activate CS
-        CS -> CS : validarCurso(cursoAtualizado)
-
-        alt S1 — Dados obrigatórios não preenchidos
-            CS --> CC : IllegalArgumentException
-            CC --> VUE : 400 Bad Request\n{ mensagem de erro }
-        else S2 — Dados inválidos
-            CS --> CC : IllegalArgumentException
-            CC --> VUE : 400 Bad Request\n{ mensagem de erro }
-        else Dados válidos
-            CS -> CS : getCursoPorId(id)
-            CS -> CR : findById(id)
-            CR --> CS : Curso atual
-            CS -> CR : save(curso)
-            CR --> CS : Curso atualizado
-            CS --> CC : Curso
-               deactivate CS
-            CC --> VUE : 200 OK\n{ CursoResponseDTO atualizado }
-            deactivate CC
-        end
-deactivate VUE
-
-' FA4-Admin — REMOVER QUALQUER CURSO
-
-== FA4-Admin: Remover Qualquer Curso ==
-note over ADM: Pré-condição: autenticado como ADMIN
-
-ADM -> VUE : Remover Curso
-activate VUE
-
-VUE -> SEC : DELETE /cursos/{id}\nAuthorization: Bearer <token>
-activate SEC
-    SEC -> SEC : validarToken(token)
-    SEC -> CC : repassa requisição
-deactivate SEC
-
-activate CC
-    CC -> CS : apagarCurso(id)
-    activate CS
-        CS -> CR : existsById(id)
-
-        alt Curso não encontrado
-            CR --> CS : false
-            CS --> CC : IllegalArgumentException\n("Curso não encontrado")
-            CC --> VUE : 400 Bad Request\n{ "Curso não encontrado" }
-        else Curso existe
-            CR --> CS : true
-            CS -> CR : deleteById(id)
-            CR --> CS : OK
-            CS --> CC : true
-               deactivate CS
-            CC --> VUE : 204 No Content
-               deactivate CC
-        end
- 
-
 deactivate VUE
 
 @enduml

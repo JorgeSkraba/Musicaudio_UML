@@ -143,10 +143,10 @@ activate CAC
             CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else Dados válidos
             AS -> AS : passwordEncoder.encode(novaSenha)\n[se senha informada]
-            AS -> AR : save(autenticacaoAtualizada)
+            AS -> AR : save(autenticacao)
             AR --> AS : Autenticacao atualizada
             AS --> CAC : Autenticacao
-        end
+      
     deactivate AS
 
     CAC -> US : getUsuarioPorAutenticacao(id)
@@ -159,7 +159,7 @@ activate CAC
     CAC -> US : atualizarUsuario(usuarioId, usuarioAtualizado)
     activate US
 
-        US -> US : validarUsuario(usuario)
+        US -> US : validarUsuario(usuarioAtualizado)
          alt S1 - Dados obrigatórios não informados
             US --> CAC : IllegalArgumentException
             CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
@@ -167,12 +167,11 @@ activate CAC
          US -> UR : save(usuarioAtualizado)
          UR --> US : Usuario atualizado
          US --> CAC : Usuario
+           deactivate US
+        CAC --> VUE : 200 OK\n{ ContaResponseDTO atualizado }
+           deactivate CAC
         end
-
-    deactivate US
-
-    CAC --> VUE : 200 OK\n{ ContaResponseDTO atualizado }
-deactivate CAC
+      end
 deactivate VUE
 
 ' FA5-Admin - REMOVER QUALQUER PERFIL
@@ -197,7 +196,7 @@ activate SEC
     end
 
 activate CAC
-    CAC -> US : apagarUsuario(\n  getUsuarioPorAutenticacao(id).getId()\n)
+    CAC -> US : apagarUsuario\n  getUsuarioPorAutenticacao(id).getId()\n
     activate US
         US -> UR : deleteById(usuarioId)
         UR --> US : OK
