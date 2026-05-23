@@ -1,0 +1,218 @@
+@startuml Gerenciar Perfil
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 200
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupFontStyle bold
+skinparam noteFontSize 11
+skinparam ParticipantFontStyle bold
+
+title Diagrama de Sequêcnia - Caso de Uso: Gerenciar Perfil\nParte Admin\nMusicáudio v1.0
+
+actor "Administrador" as ADM
+
+box "Camada Vue JS" #LightGreen
+    boundary "Views JS" as VUE
+end box
+
+box "Camada de Segurança" #LightYellow
+    participant "SecurityFilter\n(JWT)" as SEC
+end box
+
+box "Camada de Controle" #LightBlue
+    control "ContaAdminController" as CAC
+end box
+
+box "Camada de Serviço" #LightPink
+    entity "AutenticacaoService" as AS
+    entity "UsuarioService" as US
+end box
+
+box "Camada de Persistência" #LightGrey
+    database "AutenticacaoRepository" as AR
+    database "UsuarioRepository" as UR
+end box
+
+' FA1-Admin - VISUALIZAR TODOS OS PERFIS
+
+== FA2-Admin: Visualizar Todos os Perfis ==
+note over ADM: Pré-condição: autenticado como ADMIN
+
+ADM -> VUE: Visualizar Todas as Contas
+
+activate VUE
+    VUE -> SEC : GET /contas\nAuthorization: Bearer <token>
+
+ activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt S3 — Token inválido / sem permissão
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CAC : repassa requisição autenticada
+         deactivate SEC
+         activate CAC
+    end
+
+    CAC -> US : getUsuarios()
+    activate US
+        US -> UR : findAll()
+        UR --> US : List<Usuario>
+        US --> CAC : List<Usuario>
+    deactivate US
+
+    CAC -> CAC : usuarios.map(autenticação)
+
+    CAC --> VUE : 200 OK\n{ List<ContaResponseDTO> }
+
+    deactivate CAC
+    deactivate VUE
+
+
+' FA2-Admin - VISUALIZAR QUALQUER PERFIL
+
+== FA3-Admin: Visualizar Qualquer Perfil ==
+
+ADM -> VUE: Visualizar Qualquer Conta
+
+activate VUE
+
+VUE -> SEC : GET /contas/{id}\nAuthorization: Bearer <token>
+activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt S3 — Token inválido / sem permissão
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CAC : repassa requisição autenticada
+         deactivate SEC
+         activate CAC
+    end
+
+   CAC -> AS : getAutenticacaoPorId(id)
+    activate AS
+        AS -> AR : findById(id)
+        AR --> AS : Autenticacao
+        AS --> CAC : Autenticacao
+    deactivate AS
+
+    CAC -> US : getUsuarioPorAutenticacao(id)
+    activate US
+        US -> UR : findByAutenticacaoId(id)
+        UR --> US : Usuario
+        US --> CAC : Usuario
+    deactivate US
+
+    CAC --> VUE : 200 OK\n{ ContaResponseDTO }
+deactivate CAC
+deactivate VUE
+
+' FA3-Admin - EDITAR QUALQUER PERFIL
+
+== FA4-Admin: Editar Qualquer Perfil ==
+ADM -> VUE : Editar Perfis
+
+activate VUE
+
+VUE -> SEC : PUT /contas/{id}\nAuthorization: Bearer <token>\n{ dados atualizados }
+activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt S3 — Token inválido / sem permissão
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CAC : repassa requisição autenticada
+         deactivate SEC
+         activate CAC
+    end
+
+activate CAC
+    CAC -> AS : atualizarAutenticacao(id, autenticacaoAtualizada)
+    activate AS
+        AS -> AS : validarAutenticacao(autenticacaoAtualizada)
+
+        alt S1 - Dados obrigatórios não informados
+            AS --> CAC : IllegalArgumentException
+            CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else Dados válidos
+            AS -> AS : passwordEncoder.encode(novaSenha)\n[se senha informada]
+            AS -> AR : save(autenticacaoAtualizada)
+            AR --> AS : Autenticacao atualizada
+            AS --> CAC : Autenticacao
+        end
+    deactivate AS
+
+    CAC -> US : getUsuarioPorAutenticacao(id)
+    activate US
+        US -> UR : findByAutenticacaoId(id)
+        UR --> US : Usuario
+        US --> CAC : usuarioId
+    deactivate US
+
+    CAC -> US : atualizarUsuario(usuarioId, usuarioAtualizado)
+    activate US
+
+        US -> US : validarUsuario(usuario)
+         alt S1 - Dados obrigatórios não informados
+            US --> CAC : IllegalArgumentException
+            CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else Dados válidos
+         US -> UR : save(usuarioAtualizado)
+         UR --> US : Usuario atualizado
+         US --> CAC : Usuario
+        end
+
+    deactivate US
+
+    CAC --> VUE : 200 OK\n{ ContaResponseDTO atualizado }
+deactivate CAC
+deactivate VUE
+
+' FA5-Admin - REMOVER QUALQUER PERFIL
+
+== FA5-Admin: Remover Qualquer Perfil ==
+ADM -> VUE : Remover Perfis
+
+activate VUE
+
+VUE -> SEC : DELETE /contas/{id}\nAuthorization: Bearer <token>
+activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt S3 — Token inválido / sem permissão
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CAC : repassa requisição autenticada
+         deactivate SEC
+         activate CAC
+    end
+
+activate CAC
+    CAC -> US : apagarUsuario(\n  getUsuarioPorAutenticacao(id).getId()\n)
+    activate US
+        US -> UR : deleteById(usuarioId)
+        UR --> US : OK
+        US --> CAC : true
+    deactivate US
+
+    CAC -> AS : apagarAutenticacao(id)
+    activate AS
+        AS -> AR : deleteById(id)
+        AR --> AS : OK
+        AS --> CAC : true
+    deactivate AS
+
+    CAC --> VUE : 204 No Content
+deactivate CAC
+deactivate VUE
+
+@enduml

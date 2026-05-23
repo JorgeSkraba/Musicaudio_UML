@@ -8,9 +8,8 @@ skinparam sequenceGroupFontStyle bold
 skinparam noteFontSize 11
 skinparam ParticipantFontStyle bold
 
-title Diagrama de Sequência - Caso de Uso: Gerenciar Perfil\nMusicáudio v1.0
+title Diagrama de Sequência — Caso de Uso: Gerenciar Perfil\nMusicáudio v1.0
 
-actor "Administrador" as ADM
 actor "Usuário" as USR
 
 box "Camada Vue JS" #LightGreen
@@ -23,7 +22,6 @@ end box
 
 box "Camada de Controle" #LightBlue
     control "ContaController" as CC
-    control "ContaAdminController" as CAC
 end box
 
 box "Camada de Serviço" #LightPink
@@ -36,7 +34,7 @@ box "Camada de Persistência" #LightGrey
     database "UsuarioRepository" as UR
 end box
 
-' FA1 - CADASTRAR PERFIL
+' FA1 — CADASTRAR PERFIL
 
 == FA1: Cadastrar Perfil ==
 note over USR: Pré-condição: não necessita\nestar autenticado
@@ -52,10 +50,10 @@ activate CC
 
         AS -> AS : validarAutenticacao(autenticacao)
 
-        alt S1 - Dados obrigatórios não informados
+        alt S1 — Dados obrigatórios não informados
             AS --> CC : IllegalArgumentException\n("Email/Senha é obrigatório!")
             CC --> VUE : 400 Bad Request\n{ mensagem de erro }
-        else S2 - E-mail já cadastrado
+        else S2 — E-mail já cadastrado
             AS -> AR : findByEmail(email)
             AR --> AS : Autenticacao existente
             AS --> CC : Exception("E-mail já em uso")
@@ -71,26 +69,32 @@ activate CC
     deactivate AS
 
     CC -> US : novoUsuario(usuario)
-    activate US
+
+   activate US
 
         US -> US : validarUsuario(usuario)
-
-        alt S1 - Dados obrigatórios não informados
-            US --> CC :  IllegalArgumentException\n("Nome/Sobrenome/CPF é obrigatório!")
-            CC --> VUE : 400 bad Request\n{ mensagem de erro }
-        else S2 - Dados válidos
-            US -> UR : save(usuario)
-            UR --> US : Usuario salvo
-            US --> CC : Usuario
+         alt S1 - Dados obrigatórios não informados
+            US --> CAC : IllegalArgumentException
+            CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else Dados válidos
+         US -> UR : save(usuarioAtualizado)
+         UR --> US : Usuario atualizado
+         US --> CAC : Usuario
         end
-        
+
+    deactivate US
+
+    activate US
+        US -> UR : save(usuario)
+        UR --> US : Usuario salvo
+        US --> CC : Usuario
     deactivate US
 
     CC --> VUE : 201 Created\n{ ContaResponseDTO }
 
 deactivate CC
 deactivate VUE
-' FA2 - VISUALIZAR PERFIL (usuário comum)
+' FA2 — VISUALIZAR PERFIL (usuário comum)
 
 == FA2: Visualizar Perfil (Usuário Autenticado) ==
 note over USR: Pré-condição: autenticado via JWT
@@ -104,15 +108,15 @@ activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
 
-    alt S3 - Token inválido / sem permissão
+    alt S3 — Token inválido / sem permissão
         SEC --> VUE : 403 Forbidden
     else Token válido
         SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
         SEC -> CC : repassa requisição autenticada
+         deactivate SEC
+         activate CC
     end
-deactivate SEC
 
-activate CC
     CC -> AS : buscarAutenticacaoPorEmail(email)
     activate AS
         AS -> AR : findByEmail(email)
@@ -132,7 +136,7 @@ deactivate CC
 
 deactivate VUE
 
-' FA3 - EDITAR PERFIL (usuário comum)
+' FA3 — EDITAR PERFIL (usuário comum)
 
 == FA3: Editar Perfil (Usuário Autenticado) ==
 
@@ -142,18 +146,25 @@ activate VUE
 
 VUE -> SEC : PUT /contas/minha-conta\nAuthorization: Bearer <token>\n{ dados atualizados }
 activate SEC
-    SEC -> SEC : validarToken(token)
-    SEC -> CC : repassa requisição autenticada
-deactivate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
 
-activate CC
+    alt S3 — Token inválido / sem permissão
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CC : repassa requisição autenticada
+         deactivate SEC
+         activate CC
+    end
+
     CC -> AS : atualizarMinhaAutenticacao(emailLogado, autenticacaoAtualizada)
     activate AS
         AS -> AR : findByEmail(emailLogado)
         AR --> AS : Autenticacao atual
         AS -> AS : validarAutenticacao(autenticacao)
 
-        alt S1 - Dados obrigatórios não informados
+        alt S1 — Dados obrigatórios não informados
             AS --> CC : IllegalArgumentException
             CC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else Dados válidos
@@ -173,39 +184,38 @@ activate CC
 
     CC -> US : atualizarUsuario(usuarioId, usuarioAtualizado)
     activate US
-
-        US -> US : validarUsuario
-        alt S1 - Dados obrigatórios não informados
-            US --> CC : IllegalArgumentException
-            CC --> VUE : 400 Bad Request\n{ mensagem de erro }
-        else Dados válidos
-            US -> UR : save(usuario)
-            UR --> US : Usuario atualizado
-            US --> CC : Usuario
-        end
-
-
-    
+        US -> UR : save(usuarioAtualizado)
+        UR --> US : Usuario atualizado
+        US --> CC : Usuario
     deactivate US
 
     CC --> VUE : 200 OK\n{ ContaResponseDTO atualizado }
 deactivate CC
 deactivate VUE
-' FA4 - REMOVER PERFIL (usuário comum)
+' FA4 — REMOVER PERFIL (usuário comum)
 
 == FA4: Remover Perfil (Usuário Autenticado) ==
+
+note over USR, VUE: S4 — Confirmação de remoção:\nrecomenda-se confirmação no frontend\nantes de enviar a requisição
 
 USR -> VUE : Excluir Conta
 activate VUE
 
 VUE -> SEC : DELETE /contas/minha-conta\nAuthorization: Bearer <token>
 activate SEC
-    SEC -> SEC : validarToken(token)
-    SEC -> CC : repassa requisição autenticada
-deactivate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt S3 — Token inválido / sem permissão
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CC : repassa requisição autenticada
+         deactivate SEC
+         activate CC
+    end
 
 activate CC
-    note over USR, VUE: S4 - Confirmação de remoção:\nrecomenda-se confirmação no frontend\nantes de enviar a requisição
 
     CC -> AS : buscarAutenticacaoPorEmail(email)
     activate AS
@@ -238,161 +248,4 @@ activate CC
     CC --> VUE : 204 No Content
 deactivate CC
 deactivate VUE
-
-' FA2-Admin - VISUALIZAR TODOS OS PERFIS
-
-== FA2-Admin: Visualizar Todos os Perfis ==
-note over ADM: Pré-condição: autenticado como ADMIN
-
-ADM -> VUE: Visualizar Todas as Contas
-
-activate VUE
-    VUE -> SEC : GET /contas\nAuthorization: Bearer <token>
-
-    activate SEC
-    SEC -> SEC : validarToken(token)
-    alt S3 - Usuário sem permissão de admin
-        SEC --> VUE : 403 Forbidden
-    else Admin autenticado
-        SEC -> CAC : repassa requisição
-        activate CAC
-    end
-    deactivate SEC
-
-    CAC -> US : getUsuarios()
-    activate US
-        US -> UR : findAll()
-        UR --> US : List<Usuario>
-        US --> CAC : List<Usuario>
-    deactivate US
-
-    CAC -> CAC : usuarios.map(autenticação)
-
-    CAC --> VUE : 200 OK\n{ List<ContaResponseDTO> }
-
-    deactivate CAC
-    deactivate VUE
-
-
-' FA3-Admin - VISUALIZAR QUALQUER PERFIL
-
-== FA3-Admin: Visualizar Qualquer Perfil ==
-
-ADM -> VUE: Visualizar Qualquer Conta
-
-activate VUE
-
-VUE -> SEC : GET /contas/{id}\nAuthorization: Bearer <token>
-activate SEC
-    SEC -> SEC : validarToken(token)
-    SEC -> CAC : repassa requisição
-        activate CAC
-deactivate SEC
-
-
-   CAC -> AS : getAutenticacaoPorId(id)
-    activate AS
-        AS -> AR : findById(id)
-        AR --> AS : Autenticacao
-        AS --> CAC : Autenticacao
-    deactivate AS
-
-    CAC -> US : getUsuarioPorAutenticacao(id)
-    activate US
-        US -> UR : findByAutenticacaoId(id)
-        UR --> US : Usuario
-        US --> CAC : Usuario
-    deactivate US
-
-    CAC --> VUE : 200 OK\n{ ContaResponseDTO }
-deactivate CAC
-deactivate VUE
-
-' FA4-Admin - EDITAR QUALQUER PERFIL
-
-== FA4-Admin: Editar Qualquer Perfil ==
-ADM -> VUE : Editar Perfis
-
-activate VUE
-
-VUE -> SEC : PUT /contas/{id}\nAuthorization: Bearer <token>\n{ dados atualizados }
-activate SEC
-    SEC -> SEC : validarToken(token)
-    SEC -> CAC : repassa requisição
-deactivate SEC
-
-activate CAC
-    CAC -> AS : atualizarAutenticacao(id, autenticacaoAtualizada)
-    activate AS
-        AS -> AS : validarAutenticacao(autenticacaoAtualizada)
-
-        alt S1 - Dados obrigatórios não informados
-            AS --> CAC : IllegalArgumentException
-            CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
-        else Dados válidos
-            AS -> AS : passwordEncoder.encode(novaSenha)\n[se senha informada]
-            AS -> AR : save(autenticacaoAtualizada)
-            AR --> AS : Autenticacao atualizada
-            AS --> CAC : Autenticacao
-        end
-    deactivate AS
-
-    CAC -> US : getUsuarioPorAutenticacao(id)
-    activate US
-        US -> UR : findByAutenticacaoId(id)
-        UR --> US : Usuario
-        US --> CAC : usuarioId
-    deactivate US
-
-    CAC -> US : atualizarUsuario(usuarioId, usuarioAtualizado)
-    activate US
-
-        US -> US : validarUsuario(usuario)
-         alt S1 - Dados obrigatórios não informados
-            US --> CAC : IllegalArgumentException
-            CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
-        else Dados válidos
-         US -> UR : save(usuarioAtualizado)
-         UR --> US : Usuario atualizado
-         US --> CAC : Usuario
-        end
-
-    deactivate US
-
-    CAC --> VUE : 200 OK\n{ ContaResponseDTO atualizado }
-deactivate CAC
-deactivate VUE
-
-' FA5-Admin - REMOVER QUALQUER PERFIL
-
-== FA5-Admin: Remover Qualquer Perfil ==
-ADM -> VUE : Remover Perfis
-
-activate VUE
-
-VUE -> SEC : DELETE /contas/{id}\nAuthorization: Bearer <token>
-activate SEC
-    SEC -> SEC : validarToken(token)
-    SEC -> CAC : repassa requisição
-deactivate SEC
-
-activate CAC
-    CAC -> US : apagarUsuario(\n  getUsuarioPorAutenticacao(id).getId()\n)
-    activate US
-        US -> UR : deleteById(usuarioId)
-        UR --> US : OK
-        US --> CAC : true
-    deactivate US
-
-    CAC -> AS : apagarAutenticacao(id)
-    activate AS
-        AS -> AR : deleteById(id)
-        AR --> AS : OK
-        AS --> CAC : true
-    deactivate AS
-
-    CAC --> VUE : 204 No Content
-deactivate CAC
-deactivate VUE
-
 @enduml
