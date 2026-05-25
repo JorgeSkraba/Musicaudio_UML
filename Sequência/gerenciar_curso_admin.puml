@@ -8,7 +8,7 @@ skinparam sequenceGroupFontStyle bold
 skinparam noteFontSize 11
 skinparam ParticipantFontStyle bold
 
-title Diagrama de Sequência - Caso de Uso: Gerenciar Curso\nMusicáudio v1.0
+title Diagrama de Sequência - Caso de Uso: Gerenciar Curso\nParte Admin\nMusicáudio v1.0
 
 actor "Administrador" as ADM
 

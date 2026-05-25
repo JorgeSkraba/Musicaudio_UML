@@ -1,0 +1,29 @@
+
+'cadastro e login
+[*] --> Nao_Logado
+Nao_Logado : Sem Json Web Token (JWT) ativo
+state fork_state <<fork>>
+Nao_Logado --> fork_state
+fork_state --> Conta_Criada : cadastrar
+fork_state --> Sessao_Ativa : login
+Sessao_Ativa : JWT valido na sessao
+Conta_Criada --> Nao_Logado
+Sessao_Ativa --> Nao_Logado : logout\nremoção do token da sessão
+
+'CRUD perfil
+Sessao_Ativa --> Visualizando : visualizar perfil
+Visualizando --> Sessao_Ativa : voltar
+Sessao_Ativa --> Editando_Perfil : editar perfil
+Editando_Perfil --> Sessao_Ativa : cancelar
+Editando_Perfil --> Sessao_Ativa : salvar
+Editando_Perfil --> Perfil_Excluido : excluir perfil
+Perfil_Excluido --> [*]
+
+'CRUD perfil admin
+Sessao_Ativa --> Visualizando_Perfil_Por_Id : visualizar qualquer perfil [admin == true]
+Visualizando_Perfil_Por_Id --> Sessao_Ativa : voltar
+Sessao_Ativa --> Editando_Perfil_Por_Id : editar qualquer perfil [admin == true]
+Editando_Perfil_Por_Id --> Sessao_Ativa : voltar
+Editando_Perfil_Por_Id --> Sessao_Ativa : salvar
+Sessao_Ativa --> Perfil_Excluido_Por_Id : excluir qualquer perfil [admin == true]
+Perfil_Excluido_Por_Id --> Sessao_Ativa : voltar
