@@ -18,7 +18,6 @@ node "Servidor Front-end\nNode.js / Vite" as frontend {
 }
 
 node "Servidor Back-end\nJava / Spring Boot" as backend {
-  artifact "musicaudio.jar" as jar
 
   component "Controllers REST" as controllers
   component "Spring Security" as security
@@ -29,29 +28,25 @@ node "Servidor Back-end\nJava / Spring Boot" as backend {
 
 database "Banco de Dados\nPostgreSQL" as postgres {
   artifact "Database: musicaudio" as db
-  artifact "Tabela: usuarios" as usuarios
-  artifact "Tabela: papeis" as papeis
 }
 
 usuario --> browser : acessa sistema
-browser --> vue : HTTP\nlocalhost:5173
+browser --> vue : HTTPS
 
 vue --> router
 vue --> pinia
 vue --> axios
 
-axios --> controllers : Requisições REST/JSON\nHTTP localhost:8081
+axios --> controllers : Requisições REST/JSON\nHTTPS
 axios --> security : Authorization: Bearer JWT
 
 controllers --> security : valida permissões
 security --> jwt : valida token
 controllers --> services
 services --> repositories
-repositories --> postgres : JDBC/JPA\nlocalhost:5432
+repositories --> postgres : JDBC/JPA\nHost em Nuvem
 
 postgres --> db
-db --> usuarios
-db --> papeis
 
 note right of frontend
 Front-end desenvolvido com:
