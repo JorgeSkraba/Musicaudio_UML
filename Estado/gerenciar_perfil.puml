@@ -1,10 +1,17 @@
+@startuml gerenciar_perfil
+
+title Diagrama de Estado - Caso de Uso: Gerenciar Perfil\nMusicáudio
+
+skinparam nodesep 150
+
+left to right direction
 
 'cadastro e login
 [*] --> Nao_Logado
 Nao_Logado : Sem Json Web Token (JWT) ativo
 state fork_state <<fork>>
 Nao_Logado --> fork_state
-fork_state --> Conta_Criada : cadastrar
+fork_state -up-> Conta_Criada : cadastrar
 fork_state --> Sessao_Ativa : login
 Sessao_Ativa : JWT valido na sessao
 Conta_Criada --> Nao_Logado
@@ -27,3 +34,5 @@ Editando_Perfil_Por_Id --> Sessao_Ativa : voltar
 Editando_Perfil_Por_Id --> Sessao_Ativa : salvar
 Sessao_Ativa --> Perfil_Excluido_Por_Id : excluir qualquer perfil [admin == true]
 Perfil_Excluido_Por_Id --> Sessao_Ativa : voltar
+
+@enduml

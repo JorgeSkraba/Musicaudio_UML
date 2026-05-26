@@ -1,0 +1,30 @@
+@startuml gerenciar_curso
+
+title Diagrama de Estado - Caso de Uso: Gerenciar Cursos\nMusicáudio
+
+skinparam nodesep 150
+
+left to right direction
+
+'CRUD curso
+[*] --> Rascunho : criar curso
+Rascunho --> Editando : editar curso
+Editando --> Rascunho : salvar
+Editando --> Rascunho : cancelar
+Editando --> Publicado : status = "PUBLICADO"
+state c <<choice>>
+Publicado --> c : remover curso
+c --> Despublicado : [possui compras]
+Despublicado : visível para o dono, e para quem tem acesso
+c --> Rascunho : [não possui compras]
+Rascunho --> Curso_Excluido : excluir
+Curso_Excluido --> [*]
+
+'CRUD curso admin
+[*] --> Visualizando : ver qualquer curso [admin == true]
+Visualizando --> Editando_Curso_Por_Id : editar qualquer curso [admin == true]
+Editando_Curso_Por_Id --> Curso_Excluido_Por_Id : excluir qualquer curso [admin == true]
+Editando_Curso_Por_Id --> Visualizando : cancelar
+Editando_Curso_Por_Id --> Visualizando : salvar
+
+@enduml
