@@ -21,7 +21,6 @@ node "Servidor Back-end\nJava / Spring Boot" as backend {
 
   component "Controllers REST" as controllers
   component "Spring Security" as security
-  component "JWT Token Service" as jwt
   component "Services" as services
   component "Repositories JPA" as repositories
 }
@@ -37,11 +36,8 @@ vue --> router
 vue --> pinia
 vue --> axios
 
-axios --> controllers : Requisições REST/JSON\nHTTPS
 axios --> security : Authorization: Bearer JWT
-
-controllers --> security : valida permissões
-security --> jwt : valida token
+security --> controllers : autenticação e autorização
 controllers --> services
 services --> repositories
 repositories --> postgres : JDBC/JPA\nHost em Nuvem
@@ -64,11 +60,6 @@ Back-end desenvolvido com:
 - Spring Data JPA
 - Spring Security
 - JWT
-end note
-
-note bottom of postgres
-Banco configurado em:
-jdbc:postgresql://localhost:5432/musicaudio
 end note
 
 @enduml
