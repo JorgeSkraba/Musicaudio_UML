@@ -19,7 +19,7 @@ package "model.service" {
         +novoUsuario(usuario: Usuario): Usuario
         +getUsuarios(): List<Usuario>
         +getUsuarioPorId(id: Long): Usuario
-        +getUsuarioPorAutenticacao (id: Long): Usuario
+        +getUsuarioPorCredencial (id: Long): Usuario
         +atualizarUsuario(id: Long, usuario: Usuario): Usuario
         +apagarUsuario(id: Long): Boolean
     }
@@ -95,14 +95,14 @@ package "model.service" {
         +apagarMatricula(id: Long): Boolean
     }
 
-    ' AUTENTICACAO
-    interface AutenticacaoService {
-        +novaAutenticacao(autenticacao: Autenticacao): Autenticacao
-        +getAutenticacoes(): List<Autenticacao>
-        +getAutenticacaoPorId(id: Long): Autenticacao
-        +atualizarAutenticacao(id: Long, autenticacao: Autenticacao): Autenticacao
-        +apagarAutenticacao(id: Long): Boolean
-        +buscarPorEmail(email: String): Autenticacao
+    ' CREDENCIAL
+    interface CredencialService {
+        +novaCredencial(credencial: Credencial): Credencial
+        +getAutenticacoes(): List<Credencial>
+        +getCredencialPorId(id: Long): Credencial
+        +atualizarCredencial(id: Long, credencial: Credencial): Credencial
+        +apagarCredencial(id: Long): Boolean
+        +buscarPorEmail(email: String): Credencial
     }
 
    
@@ -140,7 +140,7 @@ PagamentoServiceImp ----> MatriculaService
     'MATRICULA
 MatriculaServiceImp ....|> MatriculaService
 
-    'AUTENTICACAO
-AutenticacaoServiceImp ....|> AutenticacaoService
+    'CREDENCIAL
+CredencialServiceImp ....|> CredencialService
 
 @enduml

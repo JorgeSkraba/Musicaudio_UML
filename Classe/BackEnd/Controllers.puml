@@ -21,7 +21,7 @@ package "controller" {
         +novoUsuario(usuario: Usuario): ResponseEntity<UsuarioResponseDTO>
         +getUsuarios(): ResponseEntity<List<UsuarioResponseDTO>>
         +getUsuarioPorId(id: Long): ResponseEntity<UsuarioResponseDTO>
-        +getUsuarioPorAutenticacao(id: Long) : ResponseEntity<UsuarioResponseDTO>
+        +getUsuarioPorCredencial(id: Long) : ResponseEntity<UsuarioResponseDTO>
         +atualizarUsuarioPorId(id: Long, usuario: Usuario): ResponseEntity<UsuarioResponseDTO>
         +apagarUsuario(id: Long): ResponseEntity<?>
     }
@@ -103,14 +103,14 @@ package "controller" {
         +apagarMatricula(id: Long): ResponseEntity<?>
     }
 
-    'AUTENTICACAO
-    class AutenticacaoController <<RestController>> {
-        -auttenticacaoService: AutenticacaoService
-        +novaAutenticacao(autenticacao: Autenticacao): ResponseEntity<AutenticacaoResponseDTO>
-        +getAutenticacoes(): ResponseEntity<List<AutenticacaoResponseDTO>>
-        +getAutenticacaoPorId(id: Long): ResponseEntity<AutenticacaoResponseDTO>
-        +atualizarAutenticacaoPorId(id: Long, autenticacao: Autenticacao): ResponseEntity<AutenticacaoResponseDTO>
-        +apagarAutenticacao(id: Long): ResponseEntity<?>
+    'CREDENCIAL
+    class CredencialController <<RestController>> {
+        -auttenticacaoService: CredencialService
+        +novaCredencial(credencial: Credencial): ResponseEntity<CredencialResponseDTO>
+        +getAutenticacoes(): ResponseEntity<List<CredencialResponseDTO>>
+        +getCredencialPorId(id: Long): ResponseEntity<CredencialResponseDTO>
+        +atualizarCredencialPorId(id: Long, credencial: Credencial): ResponseEntity<CredencialResponseDTO>
+        +apagarCredencial(id: Long): ResponseEntity<?>
     }
 
     'LOGIN
@@ -150,6 +150,6 @@ MatriculaController --> MatriculaService
     'TOKEN
 AuthenticationController --> TokenService
 
-    'AUTENTICACAO
-AutenticacaoController --> AutenticacaoService
+    'CREDENCIAL
+CredencialController --> CredencialService
 @enduml

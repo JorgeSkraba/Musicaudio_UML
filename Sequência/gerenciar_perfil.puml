@@ -25,12 +25,12 @@ box "Camada de Controle" #LightBlue
 end box
 
 box "Camada de Serviço" #LightPink
-    entity "AutenticacaoService" as AS
+    entity "CredencialService" as AS
     entity "UsuarioService" as US
 end box
 
 box "Camada de Persistência" #LightGrey
-    database "AutenticacaoRepository" as AR
+    database "CredencialRepository" as AR
     database "UsuarioRepository" as UR
 end box
 
@@ -45,10 +45,10 @@ VUE -> CC : POST /contas
 
 activate CC
 
-    CC -> AS : novaAutenticacao(autenticacao)
+    CC -> AS : novaCredencial(credencial)
     activate AS
 
-        AS -> AS : validarAutenticacao(autenticacao)
+        AS -> AS : validarCredencial(credencial)
 
         alt #white S1 - Dados obrigatórios não informados
             AS --> CC : IllegalArgumentException\n("Email/Senha é obrigatório!")
@@ -58,10 +58,10 @@ activate CC
             CC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else Dados válidos
             AS -> AS : passwordEncoder.encode(senha)
-            AS -> AS : autenticacao.setAdmin(false)
-            AS -> AR : save(autenticacao)
-            AR --> AS : Autenticacao salva
-            AS --> CC : Autenticacao
+            AS -> AS : credencial.setAdmin(false)
+            AS -> AR : save(credencial)
+            AR --> AS : Credencial salva
+            AS --> CC : Credencial
        
     deactivate AS
 
@@ -106,16 +106,16 @@ activate SEC
          activate CC
     end
 
-    CC -> AS : buscarAutenticacaoPorEmail(email)
+    CC -> AS : buscarCredencialPorEmail(email)
     activate AS
         AS -> AR : findByEmail(email)
-        AR --> AS : Autenticacao
-        AS --> CC : Autenticacao
+        AR --> AS : Credencial
+        AS --> CC : Credencial
     deactivate AS
 
-    CC -> US : getUsuarioPorAutenticacao(autenticacaoId)
+    CC -> US : getUsuarioPorCredencial(credencialId)
     activate US
-        US -> UR : findByAutenticacaoId(id)
+        US -> UR : findByCredencialId(id)
         UR --> US : Usuario
         US --> CC : Usuario
     deactivate US
@@ -147,11 +147,11 @@ activate SEC
          activate CC
     end
 
-    CC -> AS : atualizarMinhaAutenticacao(emailLogado, autenticacaoAtualizada)
+    CC -> AS : atualizarMinhaCredencial(emailLogado, credencialAtualizada)
     activate AS
         AS -> AR : findByEmail(emailLogado)
-        AR --> AS : Autenticacao atual
-        AS -> AS : validarAutenticacao(autenticacaoAtualizada)
+        AR --> AS : Credencial atual
+        AS -> AS : validarCredencial(credencialAtualizada)
 
         alt #white S1 - Dados obrigatórios não informados
             AS --> CC : IllegalArgumentException
@@ -161,14 +161,14 @@ activate SEC
             CC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else Dados válidos
             AS -> AS : passwordEncoder.encode(novaSenha)\n[se senha informada]
-            AS -> AR : save(autenticacao)
-            AR --> AS : Autenticacao atualizada
-            AS --> CC : Autenticacao
+            AS -> AR : save(credencial)
+            AR --> AS : Credencial atualizada
+            AS --> CC : Credencial
     deactivate AS
 
-    CC -> US : getUsuarioPorAutenticacao(autenticacaoId)
+    CC -> US : getUsuarioPorCredencial(credencialId)
     activate US
-        US -> UR : findByAutenticacaoId(id)
+        US -> UR : findByCredencialId(id)
         UR --> US : Usuario atual
         US --> CC : Usuario
         CC -> US : atualizarUsuario(usuarioId, usuarioAtualizado)
@@ -214,16 +214,16 @@ activate SEC
 
 activate CC
 
-    CC -> AS : buscarAutenticacaoPorEmail(email)
+    CC -> AS : buscarCredencialPorEmail(email)
     activate AS
         AS -> AR : findByEmail(email)
-        AR --> AS : Autenticacao
-        AS --> CC : Autenticacao
+        AR --> AS : Credencial
+        AS --> CC : Credencial
     deactivate AS
 
-    CC -> US : getUsuarioPorAutenticacao(autenticacaoId)
+    CC -> US : getUsuarioPorCredencial(credencialId)
     activate US
-        US -> UR : findByAutenticacaoId(id)
+        US -> UR : findByCredencialId(id)
         UR --> US : Usuario
         US --> CC : Usuario
     deactivate US
@@ -235,9 +235,9 @@ activate CC
         US --> CC : true
     deactivate US
 
-    CC -> AS : apagarAutenticacao(autenticacaoId)
+    CC -> AS : apagarCredencial(credencialId)
     activate AS
-        AS -> AR : deleteById(autenticacaoId)
+        AS -> AR : deleteById(credencialId)
         AR --> AS : OK
         AS --> CC : true
     deactivate AS
