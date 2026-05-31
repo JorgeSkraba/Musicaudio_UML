@@ -25,12 +25,12 @@ box "Camada de Controle" #LightBlue
 end box
 
 box "Camada de Serviço" #LightPink
-    entity "AutenticacaoService" as AS
+    entity "CredencialService" as AS
     entity "UsuarioService" as US
 end box
 
 box "Camada de Persistência" #LightGrey
-    database "AutenticacaoRepository" as AR
+    database "CredencialRepository" as AR
     database "UsuarioRepository" as UR
 end box
 
@@ -94,16 +94,16 @@ activate SEC
          activate CAC
     end
 
-   CAC -> AS : getAutenticacaoPorId(id)
+   CAC -> AS : getCredencialPorId(id)
     activate AS
         AS -> AR : findById(id)
-        AR --> AS : Autenticacao
-        AS --> CAC : Autenticacao
+        AR --> AS : Credencial
+        AS --> CAC : Credencial
     deactivate AS
 
-    CAC -> US : getUsuarioPorAutenticacao(id)
+    CAC -> US : getUsuarioPorCredencial(id)
     activate US
-        US -> UR : findByAutenticacaoId(id)
+        US -> UR : findByCredencialId(id)
         UR --> US : Usuario
         US --> CAC : Usuario
     deactivate US
@@ -134,24 +134,24 @@ activate SEC
     end
 
 activate CAC
-    CAC -> AS : atualizarAutenticacao(id, autenticacaoAtualizada)
+    CAC -> AS : atualizarCredencial(id, credencialAtualizada)
     activate AS
-        AS -> AS : validarAutenticacao(autenticacaoAtualizada)
+        AS -> AS : validarCredencial(credencialAtualizada)
 
         alt #white S1 - Dados obrigatórios não informados
             AS --> CAC : IllegalArgumentException
             CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else Dados válidos
             AS -> AS : passwordEncoder.encode(novaSenha)\n[se senha informada]
-            AS -> AR : save(autenticacao)
-            AR --> AS : Autenticacao atualizada
-            AS --> CAC : Autenticacao
+            AS -> AR : save(credencial)
+            AR --> AS : Credencial atualizada
+            AS --> CAC : Credencial
       
     deactivate AS
 
-    CAC -> US : getUsuarioPorAutenticacao(id)
+    CAC -> US : getUsuarioPorCredencial(id)
     activate US
-        US -> UR : findByAutenticacaoId(id)
+        US -> UR : findByCredencialId(id)
         UR --> US : Usuario
         US --> CAC : usuarioId
     deactivate US
@@ -196,14 +196,14 @@ activate SEC
     end
 
 activate CAC
-    CAC -> US : apagarUsuario\n  getUsuarioPorAutenticacao(id).getId()\n
+    CAC -> US : apagarUsuario\n  getUsuarioPorCredencial(id).getId()\n
     activate US
         US -> UR : deleteById(usuarioId)
         UR --> US : OK
         US --> CAC : true
     deactivate US
 
-    CAC -> AS : apagarAutenticacao(id)
+    CAC -> AS : apagarCredencial(id)
     activate AS
         AS -> AR : deleteById(id)
         AR --> AS : OK

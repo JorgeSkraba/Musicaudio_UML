@@ -27,10 +27,10 @@ package "model.entity" {
         -data_criacao : DateTime
         -data_atuaizacao : DateTime
         -data_delecao : DateTime
-        -Autenticacao : Autenticacao
+        -Credencial : Credencial
     }
 
-    class Autenticacao <<Entity>> {
+    class Credencial <<Entity>> {
         -id: Long
         -email:String
         -senha: String
@@ -103,11 +103,9 @@ package "model.entity" {
 
 package "model.repository" {
 
-    interface UsuarioRepository <<Repository>> {
-        +findByEmail(email: String): Usuario
-    }
+    interface UsuarioRepository <<Repository>> 
 
-    interface AutenticacaoRepository <<Repository>>
+    interface CredencialRepository <<Repository>>
 
     interface CursoRepository <<Repository>>
 
@@ -136,7 +134,7 @@ MaterialRepository --|> JpaRepository
 CompraRepository --|> JpaRepository
 PagamentoRepository --|> JpaRepository
 MatriculaRepository  --|> JpaRepository
-AutenticacaoRepository --|> JpaRepository
+CredencialRepository --|> JpaRepository
 
 UsuarioRepository ..> Usuario
 CursoRepository ..> Curso
@@ -146,5 +144,5 @@ MaterialRepository ..> Material
 CompraRepository ..> Compra
 PagamentoRepository ..> Pagamento
 MatriculaRepository ..> Matricula
-AutenticacaoRepository ..> Autenticacao
+CredencialRepository ..> Credencial
 @enduml

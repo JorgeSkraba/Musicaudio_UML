@@ -31,7 +31,7 @@ package "services Vue.js" {
         +criarUsuario(usuario): Promise
         +listarUsuarios(): Promise
         +buscarUsuarioPorId(id): Promise
-        +buscarUsuarioPorAutenticacao(id): Promise
+        +buscarUsuarioPorCredencial(id): Promise
         +atualizarUsuario(id, usuario): Promise
         +excluirUsuario(id): Promise
     }
@@ -106,13 +106,13 @@ package "services Vue.js" {
         +excluirMatricula(id): Promise
     }
 
-      'AUTENTICACAO
-    class autenticacaoService <<Service JS>> {
-        +criarAutenticacao(autenticacao): Promise
+      'CREDENCIAL
+    class credencialService <<Service JS>> {
+        +criarCredencial(credencial): Promise
         +listarAutenticacoes(): Promise
-        +buscarAutenticacaoPorId(id): Promise
-        +atualizarAutenticacao(id, autenticacao): Promise
-        +excluirAutenticacao(id): Promise
+        +buscarCredencialPorId(id): Promise
+        +atualizarCredencial(id, credencial): Promise
+        +excluirCredencial(id): Promise
     }
 
 }
@@ -126,6 +126,6 @@ materialService --> api
 compraService --> api
 pagamentoService --> api
 matriculaService --> api
-autenticacaoService --> api
+credencialService --> api
 
 @enduml

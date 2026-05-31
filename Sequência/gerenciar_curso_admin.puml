@@ -25,13 +25,13 @@ box "Camada de Controle" #LightBlue
 end box
 
 box "Camada de Serviço" #LightPink
-    entity "AutenticacaoService" as AS
+    entity "CredencialService" as AS
     entity "UsuarioService" as US
     entity "CursoService" as CS
 end box
 
 box "Camada de Persistência" #LightGrey
-    database "AutenticacaoRepository" as AR
+    database "CredencialRepository" as AR
     database "UsuarioRepository" as UR
     database "CursoRepository" as CR
 end box
