@@ -2,6 +2,8 @@
 
 title Diagrama de Estado - Caso de Uso: Gerenciar Cursos\nMusicáudio
 
+skinparam backgroundColor lightyellow
+
 skinparam nodesep 150
 
 left to right direction

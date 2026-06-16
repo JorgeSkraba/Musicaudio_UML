@@ -1,23 +1,23 @@
 @startuml
 title Diagrama de Implantação - Musicáudio
 
-skinparam shadowing false
+skinparam backgroundColor lightyellow
 skinparam componentStyle rectangle
 
 actor "Usuário" as usuario
 
-node "Dispositivo do Usuário" {
+node "Dispositivo do Usuário" #white {
   artifact "Navegador Web" as browser
 }
 
-node "Servidor Front-end\nNode.js / Vite" as frontend {
+node "Servidor Front-end\nNode.js / Vite" as frontend #white {
   artifact "Aplicação Vue.js\nMusicáudio Front" as vue
   component "Vue Router" as router
   component "Pinia Store" as pinia
   component "Axios" as axios
 }
 
-node "Servidor Back-end\nJava / Spring Boot" as backend {
+node "Servidor Back-end\nJava / Spring Boot" as backend #white {
 
   component "Controllers REST" as controllers
   component "Spring Security" as security
@@ -25,7 +25,7 @@ node "Servidor Back-end\nJava / Spring Boot" as backend {
   component "Repositories JPA" as repositories
 }
 
-database "Banco de Dados\nPostgreSQL" as postgres {
+database "Banco de Dados\nPostgreSQL" as postgres #white {
   artifact "Database: musicaudio" as db
 }
 

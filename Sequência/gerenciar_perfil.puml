@@ -10,6 +10,8 @@ skinparam ParticipantFontStyle bold
 
 title Diagrama de Sequência - Caso de Uso: Gerenciar Perfil\nMusicáudio v1.0
 
+skinparam backgroundColor lightyellow
+
 actor "Usuário" as USR
 
 box "Camada Vue JS" #LightGreen

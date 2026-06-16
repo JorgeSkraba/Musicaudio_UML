@@ -10,6 +10,8 @@ skinparam ParticipantFontStyle bold
 
 title Diagrama de Sequêcnia - Caso de Uso: Gerenciar Perfil\nParte Admin\nMusicáudio v1.0
 
+skinparam backgroundColor lightyellow
+
 actor "Administrador" as ADM
 
 box "Camada Vue JS" #LightGreen
@@ -64,7 +66,7 @@ activate VUE
         US --> CAC : List<Usuario>
     deactivate US
 
-    CAC -> CAC : usuarios.map(autenticação)
+    CAC -> CAC : usuarios.map(credencial)
 
     CAC --> VUE : 200 OK\n{ List<ContaResponseDTO> }
 

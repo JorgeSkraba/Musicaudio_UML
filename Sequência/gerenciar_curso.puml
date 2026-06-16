@@ -10,6 +10,8 @@ skinparam ParticipantFontStyle bold
 
 title Diagrama de Sequência — Caso de Uso: Gerenciar Curso\nMusicáudio v1.0
 
+skinparam backgroundColor lightyellow
+
 actor "Usuário" as USR
 
 box "Camada Vue JS" #LightGreen
@@ -205,7 +207,7 @@ activate SEC
 
         alt #whiteSmoke S1 — Curso incompleto para publicação\n(campos mínimos ausentes)
             CS --> CC : IllegalArgumentException\n("Dados mínimos não preenchidos!")
-            CC --> VUE : 400 Bad Request\n{ "Curso permanece como rascunho" }
+            CC --> VUE : 400 Bad Request
         else Curso apto para publicação
             CS -> CR : save(curso com status "PUBLICADO")
             CR --> CS : Curso atualizado
@@ -255,7 +257,7 @@ activate CC
 
         alt #whiteSmoke S1 — Curso incompleto para publicação\n(campos mínimos ausentes)
             CS --> CC : IllegalArgumentException\n("Dados mínimos não preenchidos!")
-            CC --> VUE : 400 Bad Request\n{ "Curso permanece publicado" }
+            CC --> VUE : 400 Bad Request
         else Curso apto para despublicar
             CS -> CR : save(curso com status "RASCUNHO")
             CR --> CS : Curso atualizado
@@ -322,8 +324,6 @@ activate CC
 
     alt #white S1 — Curso não pertence ao usuário
         CC --> VUE : 400 Bad Request\n{ "Você só pode editar seus cursos!" }
-    else S2 — Curso possui alunos ou compras vinculadas
-        CC --> VUE : 400 Bad Request\n{ "Exclusão impedida: despublique\no curso" }
     else Curso sem vínculos
         CC -> CS : apagarCurso(id)
         activate CS

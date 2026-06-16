@@ -109,7 +109,7 @@ package "services Vue.js" {
       'CREDENCIAL
     class credencialService <<Service JS>> {
         +criarCredencial(credencial): Promise
-        +listarAutenticacoes(): Promise
+        +listarCredenicais(): Promise
         +buscarCredencialPorId(id): Promise
         +atualizarCredencial(id, credencial): Promise
         +excluirCredencial(id): Promise

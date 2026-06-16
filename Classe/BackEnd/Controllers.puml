@@ -107,7 +107,7 @@ package "controller" {
     class CredencialController <<RestController>> {
         -auttenticacaoService: CredencialService
         +novaCredencial(credencial: Credencial): ResponseEntity<CredencialResponseDTO>
-        +getAutenticacoes(): ResponseEntity<List<CredencialResponseDTO>>
+        +getCredenciais(): ResponseEntity<List<CredencialResponseDTO>>
         +getCredencialPorId(id: Long): ResponseEntity<CredencialResponseDTO>
         +atualizarCredencialPorId(id: Long, credencial: Credencial): ResponseEntity<CredencialResponseDTO>
         +apagarCredencial(id: Long): ResponseEntity<?>

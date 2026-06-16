@@ -2,6 +2,8 @@
 
 title Diagrama de Estado - Caso de Uso: Gerenciar Perfil\nMusicáudio
 
+skinparam backgroundColor white
+
 skinparam nodesep 150
 
 left to right direction

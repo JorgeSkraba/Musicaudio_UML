@@ -98,7 +98,7 @@ package "model.service" {
     ' CREDENCIAL
     interface CredencialService {
         +novaCredencial(credencial: Credencial): Credencial
-        +getAutenticacoes(): List<Credencial>
+        +getCredenciais(): List<Credencial>
         +getCredencialPorId(id: Long): Credencial
         +atualizarCredencial(id: Long, credencial: Credencial): Credencial
         +apagarCredencial(id: Long): Boolean
