@@ -1,4 +1,4 @@
-@startuml Gerenciar Perfil
+@startuml Gerenciar Perfil Admin
 
 skinparam sequenceMessageAlign center
 skinparam responseMessageBelowArrow true
@@ -27,8 +27,7 @@ box "Camada de Controle" #LightBlue
 end box
 
 box "Camada de Serviço" #LightPink
-    entity "CredencialService" as AS
-    entity "UsuarioService" as US
+    entity "ContaService" as CS
 end box
 
 box "Camada de Persistência" #LightGrey
@@ -38,13 +37,13 @@ end box
 
 ' FA1-Admin - VISUALIZAR TODOS OS PERFIS
 
-== FA2-Admin: Visualizar Todos os Perfis ==
+== FA1-Admin: Visualizar Todos os Perfis ==
 note over ADM: Pré-condição: autenticado como ADMIN
 
 ADM -> VUE: Visualizar Todas as Contas
 
 activate VUE
-    VUE -> SEC : GET /contas\nAuthorization: Bearer <token>
+    VUE -> SEC : GET /contas ? deleted & page & size & sortBy\nAuthorization: Bearer <token>
 
  activate SEC
     SEC -> SEC : recuperarToken(request)
@@ -59,16 +58,26 @@ activate VUE
          activate CAC
     end
 
-    CAC -> US : getUsuarios()
-    activate US
-        US -> UR : findAll()
-        UR --> US : List<Usuario>
-        US --> CAC : List<Usuario>
-    deactivate US
+    alt #white deleted = false
+        CAC -> CS : getContasAtivas(page, size, sortBy)
+        activate CS
+            CS -> UR : findAll(pageable)\n[filtros "credencialAtivaFilter" e\n"usuarioAtivoFilter" habilitados]
+            UR --> CS : Page<Usuario>
+            CS -> CS : contaMapper.toAdminResponse
+            CS --> CAC : Page<ContaResponseDTO>
+        deactivate CS
+    else deleted = true
+        CAC -> CS : getContasDesativadas(page, size, sortBy)
+        activate CS
+            CS -> UR : findAllDeleted(pageable)\n[ambos os filtros desabilitados]
+            UR --> CS : Page<Usuario>
+            CS -> CS : contaMapper.toAdminResponse
+            CS --> CAC : Page<ContaResponseDTO>
+        deactivate CS
+        
+    end
 
-    CAC -> CAC : usuarios.map(credencial)
-
-    CAC --> VUE : 200 OK\n{ List<ContaResponseDTO> }
+    CAC --> VUE : 200 OK\n{ Page<ContaResponseDTO> }
 
     deactivate CAC
     deactivate VUE
@@ -76,7 +85,7 @@ activate VUE
 
 ' FA2-Admin - VISUALIZAR QUALQUER PERFIL
 
-== FA3-Admin: Visualizar Qualquer Perfil ==
+== FA2-Admin: Visualizar Qualquer Perfil ==
 
 ADM -> VUE: Visualizar Qualquer Conta
 
@@ -96,27 +105,27 @@ activate SEC
          activate CAC
     end
 
-   CAC -> AS : getCredencialPorId(id)
-    activate AS
-        AS -> AR : findById(id)
-        AR --> AS : Credencial
-        AS --> CAC : Credencial
-    deactivate AS
+   CAC -> CS : getContaPorId(id)
+    activate CS
+        CS -> AR : findById(id)
+        AR --> CS : Credencial
 
-    CAC -> US : getUsuarioPorCredencial(id)
-    activate US
-        US -> UR : findByCredencialId(id)
-        UR --> US : Usuario
-        US --> CAC : Usuario
-    deactivate US
-
-    CAC --> VUE : 200 OK\n{ ContaResponseDTO }
+        alt #white S1 — Credencial não encontrada
+            CS --> CAC : EntityNotFoundException\n("Credencial não encontrada!")
+            CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else Credencial encontrada
+            CS -> UR : findUsuarioByCredencial_Id(id)
+            UR --> CS : Usuario
+            CS --> CAC : ContaResponseDTO
+            deactivate CS
+            CAC --> VUE : 200 OK\n{ ContaResponseDTO }
+        end
 deactivate CAC
 deactivate VUE
 
 ' FA3-Admin - EDITAR QUALQUER PERFIL
 
-== FA4-Admin: Editar Qualquer Perfil ==
+== FA3-Admin: Editar Qualquer Perfil ==
 ADM -> VUE : Editar Perfis
 
 activate VUE
@@ -135,50 +144,53 @@ activate SEC
          activate CAC
     end
 
-activate CAC
-    CAC -> AS : atualizarCredencial(id, credencialAtualizada)
-    activate AS
-        AS -> AS : validarCredencial(credencialAtualizada)
+    CAC -> CAC : Bean Validation\n(@Valid ContaRequestDTO)
+    note right of CAC: Sem o grupo OnCreate, senha é opcional\n(mantém-se a atual caso não informada).\nDemais campos (email, nome, cpf etc.)\nsão validados por formato/obrigatoriedade.
 
-        alt #white S1 - Dados obrigatórios não informados
-            AS --> CAC : IllegalArgumentException
-            CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
-        else Dados válidos
-            AS -> AS : passwordEncoder.encode(novaSenha)\n[se senha informada]
-            AS -> AR : save(credencial)
-            AR --> AS : Credencial atualizada
-            AS --> CAC : Credencial
-      
-    deactivate AS
+    alt #white S0 — Campo obrigatório ausente / formato inválido
+        CAC --> VUE : 400 Bad Request\n{ erros de validação por campo }\n(tratado automaticamente pelo Spring)
+    else Dados no formato válido
+        CAC -> CS : atualizarConta(id, dados, minhaConta=false)
+        activate CS
 
-    CAC -> US : getUsuarioPorCredencial(id)
-    activate US
-        US -> UR : findByCredencialId(id)
-        UR --> US : Usuario
-        US --> CAC : usuarioId
-    deactivate US
+            CS -> AR : findById(id)
+            AR --> CS : Credencial atual
 
-    CAC -> US : atualizarUsuario(usuarioId, usuarioAtualizado)
-    activate US
+            alt #white S1 — Credencial não encontrada
+                CS --> CAC : EntityNotFoundException\n("Credencial não encontrada!")
+                CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
+            else Credencial encontrada
+                CS -> UR : findUsuarioByCredencial_Id(id)
+                UR --> CS : Usuario atual
 
-        US -> US : validarUsuario(usuarioAtualizado)
-         alt #WhiteSmoke S1 - Dados obrigatórios não informados
-            US --> CAC : IllegalArgumentException
-            CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
-        else Dados válidos
-         US -> UR : save(usuarioAtualizado)
-         UR --> US : Usuario atualizado
-         US --> CAC : Usuario
-           deactivate US
-        CAC --> VUE : 200 OK\n{ ContaResponseDTO atualizado }
-           deactivate CAC
-        end
-      end
+                CS -> CS : validarCredencial(credencialAtualizada, criando=false)
+                CS -> CS : validarUsuario(usuarioAtualizado, criando=false)
+
+                alt #WhiteSmoke S2 — Credencial/usuário já deletado
+                    CS --> CAC : Exception\n("Não é possível alterar\ncredenciais/usuário deletados")
+                    CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
+                else Dados válidos
+                    CS -> CS : atualiza campos da credencial\n(admin, email, senha se informada)
+                    CS -> CS : atualiza campos do usuário\n(nome, sobrenome, cpf, nascimento, telefone)
+
+                    CS -> AR : save(credencialAtual)
+                    AR --> CS : Credencial atualizada
+
+                    CS -> UR : save(usuarioAtual)
+                    UR --> CS : Usuario atualizado
+
+                    CS --> CAC : ContaResponseDTO atualizado\n(toAdminResponse)
+                    deactivate CS
+                    CAC --> VUE : 200 OK\n{ ContaResponseDTO atualizado }
+                    deactivate CAC
+                end
+            end
+    end
 deactivate VUE
 
-' FA5-Admin - REMOVER QUALQUER PERFIL
+' FA4-Admin - REMOVER QUALQUER PERFIL
 
-== FA5-Admin: Remover Qualquer Perfil ==
+== FA4-Admin: Remover Qualquer Perfil ==
 ADM -> VUE : Remover Perfis
 
 activate VUE
@@ -197,23 +209,37 @@ activate SEC
          activate CAC
     end
 
-activate CAC
-    CAC -> US : apagarUsuario\n  getUsuarioPorCredencial(id).getId()\n
-    activate US
-        US -> UR : deleteById(usuarioId)
-        UR --> US : OK
-        US --> CAC : true
-    deactivate US
+    CAC -> CS : apagarConta(id)
+    activate CS
+        CS -> AR : findById(id)
+        AR --> CS : Credencial
 
-    CAC -> AS : apagarCredencial(id)
-    activate AS
-        AS -> AR : deleteById(id)
-        AR --> AS : OK
-        AS --> CAC : true
-    deactivate AS
+        alt #white S1 — Credencial já excluída
+            CS --> CAC : Exception\n("Credencial já foi excluída!")
+            CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else Credencial ativa
+            CS -> UR : findUsuarioByCredencial_Id(id)
+            UR --> CS : Usuario
 
-    CAC --> VUE : 204 No Content
-deactivate CAC
+            alt #WhiteSmoke S2 — Usuário já excluído
+                CS --> CAC : Exception\n("Usuário já foi excluído!")
+                CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
+            else Usuário ativo
+                CS -> CS : credencial.setDataDelecao(now())
+                CS -> CS : credencial.setEmail(email + "_deleted")
+                CS -> CS : usuario.setDataDelecao(now())
+
+                CS -> AR : save(credencial)
+                AR --> CS : OK
+                CS -> UR : save(usuario)
+                UR --> CS : OK
+
+                CS --> CAC : true
+                deactivate CS
+                CAC --> VUE : 204 No Content
+                deactivate CAC
+            end
+        end
 deactivate VUE
 
 @enduml

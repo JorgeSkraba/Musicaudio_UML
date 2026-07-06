@@ -15,27 +15,37 @@ skinparam shadowing false
 
 package "controller" {
 
-    'USUARIO
-    class UsuarioController <<RestController>> {
-        -usuarioService: UsuarioService
-        +novoUsuario(usuario: Usuario): ResponseEntity<UsuarioResponseDTO>
-        +getUsuarios(): ResponseEntity<List<UsuarioResponseDTO>>
-        +getUsuarioPorId(id: Long): ResponseEntity<UsuarioResponseDTO>
-        +getUsuarioPorCredencial(id: Long) : ResponseEntity<UsuarioResponseDTO>
-        +atualizarUsuarioPorId(id: Long, usuario: Usuario): ResponseEntity<UsuarioResponseDTO>
-        +apagarUsuario(id: Long): ResponseEntity<?>
+    'CONTA
+    class ContaController <<RestController>> {
+        -contaService: ContaService
+        +minhaConta(userDetails: UserDetails): ResponseEntity<ContaResponseDTO>
+        +cadastrar(dados: ContaRequestDTO): ResponseEntity<ContaResponseDTO>
+        +atualizarMinhaConta(userDetails: UserDetails, dados: ContaRequestDTO): ResponseEntity<ContaResponseDTO>
+        +deletarMinhaConta(userDetails: UserDetails): ResponseEntity<?>
+    }
+
+    'CONTA ADMIN
+    class ContaAdminController <<RestController>> {
+        -contaService: ContaService
+        +listarContas(page: int, size: int, sortBy: String, deleted: boolean): ResponseEntity<Page<ContaResponseDTO>>
+        +buscarPorContaId(id: Long): ResponseEntity<ContaResponseDTO>
+        +atualizarConta(id: Long, dados: ContaRequestDTO): ResponseEntity<ContaResponseDTO>
+        +deletarConta(id: Long): ResponseEntity<Void>
     }
 
     'CURSO
     class CursoController <<RestController>> {
         -cursoService: CursoService
-        +criarCurso(dto: CursoRequestDTO): ResponseEntity<CursoResponseDTO>
-        +getCursos(): ResponseEntity<List<CursoResponseDTO>>
-        +getCursoPorId(id: Long): ResponseEntity<CursoResponseDTO>
-        +getCursosPorInstrutor(usuarioId: Long): ResponseEntity<List<CursoResponseDTO>>
-        +atualizarCurso(id: Long, dto: CursoRequestDTO): ResponseEntity<CursoResponseDTO>
+        -contaService: ContaService
+        +criarCurso(userDetails: UserDetails, dados: CursoRequestDTO): ResponseEntity<?>
+        +listarCursos(deleted: boolean, page: int, size: int, sortBy: String): ResponseEntity<?>
+        +buscarCursoPorId(id: Long): ResponseEntity<?>
+        +atualizarCursoComoAdmin(userDetails: UserDetails, id: Long, dados: CursoRequestDTO): ResponseEntity<?>
+        +deletarCursoComoAdmin(id: Long, userDetails: UserDetails): ResponseEntity<Void>
+        +listarMeusCursos(userDetails: UserDetails): ResponseEntity<List<CursoResponseDTO>>
+        +atualizarMeuCurso(userDetails: UserDetails, id: Long, dados: CursoRequestDTO): ResponseEntity<?>
+        +deletarMeuCurso(id: Long, userDetails: UserDetails): ResponseEntity<Void>
         +publicarCurso(id: Long): ResponseEntity<CursoResponseDTO>
-        +apagarCurso(id: Long): ResponseEntity<?>
     }
 
     'MODULO
@@ -103,16 +113,6 @@ package "controller" {
         +apagarMatricula(id: Long): ResponseEntity<?>
     }
 
-    'CREDENCIAL
-    class CredencialController <<RestController>> {
-        -auttenticacaoService: CredencialService
-        +novaCredencial(credencial: Credencial): ResponseEntity<CredencialResponseDTO>
-        +getCredenciais(): ResponseEntity<List<CredencialResponseDTO>>
-        +getCredencialPorId(id: Long): ResponseEntity<CredencialResponseDTO>
-        +atualizarCredencialPorId(id: Long, credencial: Credencial): ResponseEntity<CredencialResponseDTO>
-        +apagarCredencial(id: Long): ResponseEntity<?>
-    }
-
     'LOGIN
     class AuthenticationController <<RestController>> {
         -authenticationManager: AuthenticationManager
@@ -123,11 +123,15 @@ package "controller" {
 
 ' Controllers
 
-   'USUARIO
-UsuarioController --> UsuarioService
+    'CONTA
+ContaController --> ContaService
+
+    'CONTA ADMIN
+ContaAdminController --> ContaService
 
     'CURSO
 CursoController --> CursoService
+CursoController --> ContaService
 
     'MODULO
 ModuloController --> ModuloService
@@ -150,6 +154,4 @@ MatriculaController --> MatriculaService
     'TOKEN
 AuthenticationController --> TokenService
 
-    'CREDENCIAL
-CredencialController --> CredencialService
 @enduml

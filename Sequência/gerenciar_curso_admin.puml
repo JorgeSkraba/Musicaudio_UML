@@ -27,26 +27,22 @@ box "Camada de Controle" #LightBlue
 end box
 
 box "Camada de Serviço" #LightPink
-    entity "CredencialService" as AS
-    entity "UsuarioService" as US
     entity "CursoService" as CS
 end box
 
 box "Camada de Persistência" #LightGrey
-    database "CredencialRepository" as AR
-    database "UsuarioRepository" as UR
     database "CursoRepository" as CR
 end box
 
-' FA1-Admin - LISTAR TODOS OS CURSOS
+' FA1-Admin - LISTAR CURSOS (ATIVOS/DESATIVADOS, PAGINADO)
 
-== FA1-Admin: Listar Todos os Cursos ==
+== FA1-Admin: Listar Cursos ==
 note over ADM: Pré-condição: autenticado como ADMIN
 
 ADM -> VUE : Listar Cursos
 activate VUE
 
-VUE -> SEC : GET /cursos\nAuthorization: Bearer <token>
+VUE -> SEC : GET /cursos ? deleted & page & size & sortBy\nAuthorization: Bearer <token>
 activate SEC
     SEC -> SEC : recuperarToken(request)
     SEC -> SEC : tokenService.validarToken(token)
@@ -60,20 +56,28 @@ activate SEC
          activate CC
     end
 
-    CC -> CS : getCursos()
-    activate CS
-        CS -> CR : findAll()
-        CR --> CS : List<Curso>
-        CS --> CC : List<Curso>
-    deactivate CS
+    alt #white deleted = false
+        CC -> CS : getCursosAtivos(page, size, sortBy)
+        activate CS
+            CS -> CR : findAll(pageable)\n[filtro "cursoAtivoFilter" habilitado]
+            CR --> CS : Page<Curso>
+        deactivate CS
+    else deleted = true
+        CC -> CS : getCursosDesativados(page, size, sortBy)
+        activate CS
+            CS -> CR : findAllDeleted(pageable)\n[filtro "cursoAtivoFilter" desabilitado]
+            CR --> CS : Page<Curso>
+            CS-->CC : Page<CursoResponseDTO>
+        deactivate CS
+    end
 
-    CC --> VUE : 200 OK\n{ List<CursoResponseDTO> }
+    CC --> VUE : 200 OK\n{ Page<CursoResponseDTO> }
 deactivate CC
 deactivate VUE
 
 ' FA2-Admin - LISTAR CURSO POR ID
 
-== FA2-Admin: Listar Curso Por Id ==
+== FA2-Admin: Buscar Curso por Id ==
 
 ADM -> VUE : Visualizar Curso por Id
 activate VUE
@@ -94,14 +98,14 @@ CC -> CS : getCursoPorId(id)
 activate CS
 CS -> CR : findById(id)
     alt #white S1 - Curso não encontrado
-            CR --> CS : EntityNotFoundException
-            CS --> CC : EntityNotFoundException\n("Curso não encontrado")
-            CC --> VUE : 400 Bad Request\n{ "Curso não encontrado" }
+            CR --> CS : Optional.empty()
+            CS --> CC : EntityNotFoundException\n("Curso não encontrado!")
+            CC --> VUE : 404 Not Found\n{ "Curso não encontrado!" }
     else Curso existe
         CR --> CS : Curso
         CS --> CC : Curso
         deactivate CS
-        CC --> VUE : 200 OK\n{CursoResponseDTO}
+        CC --> VUE : 200 OK\n{ CursoResponseDTO }
         deactivate CC
     end
 deactivate VUE
@@ -109,7 +113,7 @@ deactivate VUE
 ' FA3-Admin - EDITAR QUALQUER CURSO
 
 == FA3-Admin: Editar Qualquer Curso ==
-note over ADM: Pré-condição: autenticado como ADMIN
+note over ADM: Pré-condição: autenticado como ADMIN.\nComo admin=true, a verificação de\npertencimento ao usuário é ignorada.
 
 ADM -> VUE : Editar Curso
 activate VUE
@@ -128,22 +132,23 @@ activate SEC
          activate CC
     end
 
-activate CC
-
-    CC -> CS : atualizarCurso(id, cursoAtualizado)
+    CC -> CS : atualizarCurso(id, cursoAtualizado, emailLogado, admin=true)
     activate CS
         CS -> CS : validarCurso(cursoAtualizado)
 
         alt #white S1 - Dados obrigatórios não preenchidos
-            CS --> CC : IllegalArgumentException
+            CS --> CC : Exception\n(mensagem de validação)
             CC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else S2 - Dados inválidos
-            CS --> CC : IllegalArgumentException
+            CS --> CC : Exception\n(mensagem de validação)
             CC --> VUE : 400 Bad Request\n{ mensagem de erro }
         else Dados válidos
-            CS -> CS : getCursoPorId(id)
             CS -> CR : findById(id)
             CR --> CS : Curso atual
+
+            note over CS: admin = true\n→ validarPertenceAoUsuario NÃO é chamada
+
+            CS -> CS : atualiza nome, descrição,\npreço, nível e status
             CS -> CR : save(curso)
             CR --> CS : Curso atualizado
             CS --> CC : Curso
@@ -156,7 +161,7 @@ deactivate VUE
 ' FA4-Admin - REMOVER QUALQUER CURSO
 
 == FA4-Admin: Remover Qualquer Curso ==
-note over ADM: Pré-condição: autenticado como ADMIN
+note over ADM: Pré-condição: autenticado como ADMIN.\nComo admin=true, a verificação de\npertencimento ao usuário é ignorada.
 
 ADM -> VUE : Remover Curso
 activate VUE
@@ -175,26 +180,31 @@ activate SEC
          activate CC
     end
 
-activate CC
-    CC -> CS : apagarCurso(id)
+    CC -> CS : apagarCurso(id, emailLogado, admin=true)
     activate CS
-        CS -> CR : existsById(id)
+        CS -> CR : findById(id)
 
         alt #white S1 - Curso não encontrado
-            CR --> CS : false
-            CS --> CC : IllegalArgumentException\n("Curso não encontrado")
-            CC --> VUE : 400 Bad Request\n{ "Curso não encontrado" }
-        else Curso existe
-            CR --> CS : true
-            CS -> CR : deleteById(id)
-            CR --> CS : OK
+            CR --> CS : Optional.empty()
+            CS --> CC : EntityNotFoundException\n("Curso não foi achado!")
+            CC --> VUE : 404 Not Found\n{ "Curso não foi achado!" }
+        else S2 - Curso já excluído
+            CR --> CS : Curso (dataDelecao != null)
+            CS --> CC : IllegalArgumentException\n("Curso já foi excluído!")
+            CC --> VUE : 400 Bad Request\n{ "Curso já foi excluído!" }
+        else Curso encontrado e ativo
+            CR --> CS : Curso
+
+            note over CS: admin = true\n→ validarPertenceAoUsuario NÃO é chamada
+
+            CS -> CS : curso.setDataDelecao(now())
+            CS -> CR : save(curso)
+            CR --> CS : Curso (excluído logicamente)
             CS --> CC : true
                deactivate CS
             CC --> VUE : 204 No Content
                deactivate CC
         end
- 
-
 deactivate VUE
 
 @enduml

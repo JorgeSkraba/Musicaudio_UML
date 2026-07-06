@@ -26,14 +26,16 @@ package "services Vue.js" {
         +login(dados): Promise
     }
 
-    'USUARIO
+    'CONTA
     class userService <<Service JS>> {
-        +criarUsuario(usuario): Promise
-        +listarUsuarios(): Promise
-        +buscarUsuarioPorId(id): Promise
-        +buscarUsuarioPorCredencial(id): Promise
-        +atualizarUsuario(id, usuario): Promise
-        +excluirUsuario(id): Promise
+        +criarConta(dados): Promise
+        +buscarMinhaConta(): Promise
+        +listarContas(deleted, page, size, sortBy): Promise
+        +buscarContaPorId(credencialId): Promise
+        +atualizarConta(credencialId, dados): Promise
+        +excluirConta(credencialId): Promise
+        +atualizarMinhaConta(dados): Promise
+        +excluirMinhaConta(): Promise
     }
 
     'CURSO
@@ -106,15 +108,6 @@ package "services Vue.js" {
         +excluirMatricula(id): Promise
     }
 
-      'CREDENCIAL
-    class credencialService <<Service JS>> {
-        +criarCredencial(credencial): Promise
-        +listarCredenicais(): Promise
-        +buscarCredencialPorId(id): Promise
-        +atualizarCredencial(id, credencial): Promise
-        +excluirCredencial(id): Promise
-    }
-
 }
 
 authService --> api
@@ -126,6 +119,5 @@ materialService --> api
 compraService --> api
 pagamentoService --> api
 matriculaService --> api
-credencialService --> api
 
 @enduml

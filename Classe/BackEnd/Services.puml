@@ -14,25 +14,29 @@ skinparam shadowing false
 
 package "model.service" {
 
-    ' USUARIO
-    interface UsuarioService {
-        +novoUsuario(usuario: Usuario): Usuario
-        +getUsuarios(): List<Usuario>
-        +getUsuarioPorId(id: Long): Usuario
-        +getUsuarioPorCredencial (id: Long): Usuario
-        +atualizarUsuario(id: Long, usuario: Usuario): Usuario
-        +apagarUsuario(id: Long): Boolean
+    ' CONTA (unifica antigo UsuarioService + CredencialService)
+    interface ContaService {
+        +novaConta(dados: ContaRequestDTO): ContaResponseDTO
+        +novaContaComoAdmin(dados: ContaRequestDTO): ContaResponseDTO
+        +getContasAtivas(page: int, size: int, sortBy: String): Page<ContaResponseDTO>
+        +getContasDesativadas(page: int, size: int, sortBy: String): Page<ContaResponseDTO>
+        +getContaPorId(id: Long): ContaResponseDTO
+        +atualizarConta(id: Long, dados: ContaRequestDTO): ContaResponseDTO
+        +atualizarMinhaConta(id: Long, dados: ContaRequestDTO): ContaResponseDTO
+        +getContaPorEmail(email: String): ContaResponseDTO
+        +apagarConta(id: Long): Boolean
     }
 
     'CURSO
     interface CursoService {
-        +criarCurso(curso: Curso): Curso
-        +getCursos(): List<Curso>
+        +criarCurso(emailLogado: String, curso: Curso): Curso
+        +getCursosAtivos(page: int, size: int, sortBy: String): Page<Curso>
+        +getCursosDesativados(page: int, size: int, sortBy: String): Page<Curso>
         +getCursoPorId(id: Long): Curso
-        +getCursosPorInstrutor(usuarioId: Long): List<Curso>
-        +atualizarCurso(id: Long, curso: Curso): Curso
+        +getCursosPorUsuario(usuarioId: Long): List<Curso>
         +publicarCurso(id: Long): Curso
-        +apagarCurso(id: Long): Boolean
+        +atualizarCurso(id: Long, cursoAtualizado: Curso, emailLogado: String, admin: boolean): Curso
+        +apagarCurso(id: Long, emailLogado: String, admin: boolean): Boolean
     }
 
      'MODULO 
@@ -95,17 +99,6 @@ package "model.service" {
         +apagarMatricula(id: Long): Boolean
     }
 
-    ' CREDENCIAL
-    interface CredencialService {
-        +novaCredencial(credencial: Credencial): Credencial
-        +getCredenciais(): List<Credencial>
-        +getCredencialPorId(id: Long): Credencial
-        +atualizarCredencial(id: Long, credencial: Credencial): Credencial
-        +apagarCredencial(id: Long): Boolean
-        +buscarPorEmail(email: String): Credencial
-    }
-
-   
     class TokenService <<Service>> {
         -secretKey: String
         +gerarToken(subject: String): String
@@ -115,8 +108,8 @@ package "model.service" {
 
 ' Services
 
-    'USUARIO
-UsuarioServiceImp ....|> UsuarioService
+    'CONTA
+ContaServiceImp ....|> ContaService
 
     'CURSO
 CursoServiceImp ....|> CursoService
@@ -139,8 +132,5 @@ PagamentoServiceImp ----> MatriculaService
 
     'MATRICULA
 MatriculaServiceImp ....|> MatriculaService
-
-    'CREDENCIAL
-CredencialServiceImp ....|> CredencialService
 
 @enduml
