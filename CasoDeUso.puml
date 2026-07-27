@@ -27,8 +27,9 @@ usuario --> (Gerenciar Cursos)
 usuario --> (Buscar Cursos)
 usuario --> (Realizar Curso)
 
-(Gerenciar Cursos) --> (Gerenciar Aulas) : extend
-(Gerenciar Aulas) --> (Upload de Materiais) : extend
+(Gerenciar Cursos) <-- (Gerenciar Aulas) : extend
+(Gerenciar Aulas) <-- (Upload de Materiais) : extend
 
-(Buscar Cursos) --> (Comprar Curso) : extend
+(Buscar Cursos) <-- (Comprar Curso) : extend
+
 @enduml
