@@ -5,42 +5,26 @@ skinparam backgroundColor lightyellow
 skinparam componentStyle rectangle
 skinparam DefaultTextAlignment center
 
-actor "Usuário" as usuario
-
-node "Dispositivo do Usuário" #white {
-  artifact "Navegador Web" as browser
+node "Dispositivo do Usuário" <<device>> #white {
+  artifact "Navegador Web" as browser 
 }
 
-node "Servidor Front-end\nNode.js / Vite" as frontend #white {
-  artifact "Aplicação Vue.js\nMusicáudio Front" as vue
-  component "Axios" as axios
+node "Servidor Front-end\nNode.js / Vite" as frontend <<server>> #white {
+  artifact "Aplicação Vue.js" as vue <<artifact>>
 }
 
-node "Servidor Back-end" as backend #white {
+node "Servidor Back-end" as backend <<server>> #white {
 
- component "Aplicação Spring Boot" as spring {
+ component "Aplicação Spring Boot" as spring <<artifact>>
 
-  component "Controllers REST" as controllers
-  component "Spring Security" as security
-  component "Services" as services
-  component "Repositories JPA" as repositories
- }
-
-  database "Banco de Dados\nPostgreSQL\nMusicáudio" as postgres #white 
+  database "Banco de Dados\nPostgreSQL" as postgres <<database>> #white 
 }
 
-
-
-usuario --> browser : acessa sistema
 browser --> vue : HTTPS
 
-vue --> axios
+vue --> spring
 
-axios --> security : Authorization: Bearer JWT
-security --> controllers : autenticação e autorização
-controllers --> services
-services --> repositories
-repositories --> postgres : JDBC/JPA
+spring --> postgres
 
 
 note right of frontend

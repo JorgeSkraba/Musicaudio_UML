@@ -10,23 +10,18 @@ left to right direction
 
 'CRUD curso
 [*] --> Rascunho : criar curso
-Rascunho --> Editando : editar curso
-Editando --> Rascunho : salvar
-Editando --> Rascunho : cancelar
-Editando --> Publicado : status = "PUBLICADO"
+Rascunho : curso é visto apenas pelo criador
+Rascunho --> Publicado : publicar
+Publicado : curso é visto por outros usuários e pode ser comprado
+
 state c <<choice>>
 Publicado --> c : remover curso
 c --> Despublicado : [possui compras]
 Despublicado : visível para o dono, e para quem tem acesso
-c --> Rascunho : [não possui compras]
-Rascunho --> Curso_Excluido : excluir
-Curso_Excluido --> [*]
+Despublicado --> [*]
 
-'CRUD curso admin
-[*] --> Visualizando : ver qualquer curso [admin == true]
-Visualizando --> Editando_Curso_Por_Id : editar qualquer curso [admin == true]
-Editando_Curso_Por_Id --> Curso_Excluido_Por_Id : excluir qualquer curso [admin == true]
-Editando_Curso_Por_Id --> Visualizando : cancelar
-Editando_Curso_Por_Id --> Visualizando : salvar
+c --> Rascunho : [não possui compras]
+Rascunho --> Curso_Desativado : excluir
+Curso_Desativado --> [*]
 
 @enduml

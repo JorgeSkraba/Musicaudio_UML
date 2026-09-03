@@ -1,0 +1,212 @@
+@startuml Gerenciar Material
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 200
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupFontStyle bold
+skinparam noteFontSize 11
+skinparam ParticipantFontStyle bold
+
+title Diagrama de Sequência - Caso de Uso: Upload de Materiais\nUsuário Autenticado (Instrutor)\nMusicáudio v1.0\n[PROPOSTA - ainda não implementado]
+
+skinparam backgroundColor lightyellow
+
+actor "Usuário" as USR
+
+box "Camada Vue JS" #LightGreen
+    boundary "Views JS" as VUE
+end box
+
+box "Camada de Segurança" #LightYellow
+    participant "SecurityFilter\n(JWT)" as SEC
+end box
+
+box "Camada de Controle" #LightBlue
+    control "MaterialController" as MC
+end box
+
+box "Camada de Serviço" #LightPink
+    entity "MaterialService" as MS
+end box
+
+box "Camada de Armazenamento" #Orange
+    control "FileStorageService\n(genérico)" as FS
+end box
+
+box "Camada de Persistência" #LightGrey
+    database "MaterialRepository" as MR
+    database "AulaRepository" as AR
+end box
+
+' FA1 - UPLOAD DE MATERIAL
+
+== FA1: Upload de Material ==
+note over USR: Pré-condição: autenticado via JWT,\né dono da aula selecionada
+
+USR -> VUE : Selecionar Aula + Arquivo\n(pdf, áudio, vídeo, etc.)
+activate VUE
+
+VUE -> SEC : POST /aulas/{aulaId}/materiais\nAuthorization: Bearer <token>\nContent-Type: multipart/form-data\n{ arquivo, tipo }
+activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt #white S1 — Token inválido / sem autenticação
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> MC : repassa requisição autenticada
+        deactivate SEC
+        activate MC
+    end
+
+    MC -> MS : uploadMaterial(aulaId, arquivo, idLogado)
+    activate MS
+        MS -> MS : validarAulaPertencimento\n(aulaId, idLogado, admin=false)
+        MS -> AR : existsByIdAndCurso_Usuario\n_Credencial_Id(aulaId, idLogado)
+        AR --> MS : boolean
+
+        alt #white S1 — Aula não pertence ao usuário
+            MS --> MC : IllegalAccessException\n("Você só pode enviar materiais\npara suas próprias aulas!")
+            MC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else Aula pertence ao usuário
+            MS -> MS : validarArquivo(arquivo)\n[tipo permitido: PDF, áudio, vídeo, imagem;\ntamanho dentro do limite configurado]
+
+            alt #white S2 — Tipo de arquivo não suportado
+                MS --> MC : IllegalArgumentException\n("Tipo de arquivo não suportado!")
+                MC --> VUE : 400 Bad Request\n{ mensagem de erro }
+            else S3 — Arquivo excede o tamanho máximo
+                MS --> MC : IllegalArgumentException\n("Arquivo excede o tamanho\nmáximo permitido!")
+                MC --> VUE : 400 Bad Request\n{ mensagem de erro }
+            else Arquivo válido
+                MS -> AR : getReferenceById(aulaId)
+                AR --> MS : Aula (referência)
+
+                MS -> FS : armazenar(arquivo, aulaId)
+                activate FS
+                    FS -> FS : gerarNomeUnico(arquivo)
+                    FS -> FS : persistir(arquivo)\n[destino concreto a definir]
+
+                    alt #white S4 — Falha ao persistir o arquivo
+                        FS --> MS : IOException\n("Falha ao armazenar o arquivo!")
+                        MS --> MC : Exception\n("Erro ao processar upload:" + msg)
+                        MC --> VUE : 500 Internal Server Error\n{ mensagem de erro }
+                    else Armazenamento bem-sucedido
+                        FS --> MS : caminho/URL do arquivo
+                        deactivate FS
+
+                        MS -> MS : material.setAula(aula)\nmaterial.setNomeOriginal(arquivo.nome)\nmaterial.setTipo(tipo)\nmaterial.setCaminho(url)\nmaterial.setTamanho(arquivo.tamanho)
+                        MS -> MR : save(material)
+                        MR --> MS : Material salvo
+                        MS --> MC : Material
+                        deactivate MS
+                        MC -> MC : materialMapper.toResponse(material)
+                        MC --> VUE : 201 Created\n{ MaterialResponseDTO }
+                        deactivate MC
+                    end
+                end
+            end
+deactivate VUE
+
+' FA2 - LISTAR MATERIAIS DA AULA
+
+== FA2: Listar Materiais da Aula ==
+
+USR -> VUE : Listar Materiais da Aula
+activate VUE
+
+VUE -> SEC : GET /aulas/{aulaId}/materiais\nAuthorization: Bearer <token>
+activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt #white S1 — Token inválido / sem autenticação
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> MC : repassa requisição autenticada
+        deactivate SEC
+        activate MC
+    end
+
+    MC -> MS : listarMateriais(aulaId, idLogado, admin=false)
+    activate MS
+        MS -> MS : validarAulaPertencimento\n(aulaId, idLogado, admin=false)
+        MS -> AR : existsByIdAndCurso_Usuario\n_Credencial_Id(aulaId, idLogado)
+        AR --> MS : boolean
+
+        alt #white S1 — Aula não pertence ao usuário
+            MS --> MC : IllegalAccessException\n("Você só pode ver materiais\nde suas próprias aulas!")
+            MC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else Aula pertence ao usuário
+            MS -> MR : findByAula_IdAndDataDelecaoIsNull(aulaId)
+            MR --> MS : List<Material>
+            MS --> MC : List<Material>
+            deactivate MS
+            MC -> MC : materiais.stream()\n.map(toResponse)
+            MC --> VUE : 200 OK\n{ List<MaterialResponseDTO> }
+            deactivate MC
+        end
+deactivate VUE
+
+' FA3 - REMOVER MATERIAL
+
+== FA3: Remover Material ==
+
+USR -> VUE : Remover Material
+activate VUE
+
+VUE -> SEC : DELETE /materiais/{id}\nAuthorization: Bearer <token>
+activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt #white S1 — Token inválido / sem autenticação
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> MC : repassa requisição autenticada
+        deactivate SEC
+        activate MC
+    end
+
+    MC -> MS : removerMaterial(id, idLogado, admin=false)
+    activate MS
+        MS -> MS : validarMaterialPertencimento\n(id, idLogado, admin=false)
+        MS -> MR : existsByIdAndAula_Curso_Usuario\n_Credencial_Id(id, idLogado)
+        MR --> MS : boolean
+
+        alt #white S1 — Material não pertence ao usuário
+            MS --> MC : IllegalAccessException\n("Você só pode remover\nseus próprios materiais!")
+            MC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else Material pertence ao usuário
+            MS -> MS : getMaterialPorId(id)
+            MS -> MR : findById(id)
+            MR --> MS : Optional<Material>
+
+            alt #white S2 — Material não encontrado
+                MS --> MC : EntityNotFoundException\n("Material não encontrado!")
+                MC --> VUE : 404 Not Found\n{ mensagem de erro }
+            else S3 — Material já excluído
+                MS --> MC : IllegalArgumentException\n("Material já foi excluído!")
+                MC --> VUE : 400 Bad Request\n{ mensagem de erro }
+            else Material ativo
+                note over MS
+                  Exclusão lógica (dataDelecao),
+                  consistente com o padrão usado
+                  em Aula/Curso. O arquivo físico
+                  permanece no armazenamento.
+                end note
+                MS -> MS : material.setDataDelecao(now())
+                MS -> MR : save(material)
+                MR --> MS : Material (excluído logicamente)
+                MS --> MC : true
+                deactivate MS
+                MC --> VUE : 204 No Content
+                deactivate MC
+            end
+        end
+deactivate VUE
+
+@enduml

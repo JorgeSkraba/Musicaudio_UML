@@ -3,7 +3,9 @@ title Diagrama de Classes Services - Musicáudio
 
 !pragma layout elk
 
+left to right direction
 skinparam linetype ortho
+skinparam backgroundColor lightyellow
 'skinparam nodesep 120
 'skinparam ranksep 100
 
