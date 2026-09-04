@@ -1,0 +1,82 @@
+@startuml Gerenciar Aula
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 200
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupFontStyle bold
+skinparam noteFontSize 11
+skinparam ParticipantFontStyle bold
+
+title Diagrama de Sequência - Caso de Uso: Gerenciar Aula\nUsuário Autenticado (Instrutor)\nMusicáudio v1.0
+
+skinparam backgroundColor lightyellow
+
+actor "Usuário" as USR
+
+box "Camada Vue JS" #LightGreen
+    boundary "Views JS" as VUE
+end box
+
+box "Camada de Segurança" #LightYellow
+    participant "SecurityFilter\n(JWT)" as SEC
+end box
+
+box "Camada de Controle" #LightBlue
+    control "AulaController" as AC
+end box
+
+box "Camada de Serviço" #LightPink
+    entity "AulaService" as AS
+end box
+
+box "Camada de Persistência" #LightGrey
+    database "AulaRepository" as AR
+    database "CursoRepository" as CR
+end box
+
+== FA1: Cadastrar Aula ==
+note over USR: Pré-condição: autenticado via JWT,\né dono do curso ao qual a aula pertencerá
+
+USR -> VUE : Criar Aula
+activate VUE
+
+VUE -> SEC : POST /aulas/nova/{cursoId}\nAuthorization: Bearer <token>\n{ dados da aula }
+activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt #white S1 — Token inválido / sem autenticação
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> AC : repassa requisição autenticada
+        deactivate SEC
+        activate AC
+    end
+
+    AC -> AS : criarAula(cursoId, aula, idLogado)
+    activate AS
+        AS -> AS : validarCursoPertencimento\n(cursoId, idLogado, admin=false)
+
+        alt #white S1 — Curso não pertence ao usuário
+            AS --> AC : IllegalArgumentException\n("Você não pode alterar um curso\nque não te pertence!")
+            AC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else Curso pertence ao usuário
+            AS -> CR : getReferenceById(cursoId)
+            activate CR
+            CR --> AS : Curso (referência)
+            deactivate CR
+            AS -> AS : aula.setCurso(curso)
+            AS -> AR : save(aula)
+            activate AR
+            AR --> AS : Aula salva
+            deactivate AR
+            AS --> AC : Aula
+            deactivate AS
+            AC --> VUE : 201 Created\n{ AulaResponseDTO }
+            deactivate AC
+        end
+deactivate VUE
+
+@enduml

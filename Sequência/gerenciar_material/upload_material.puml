@@ -39,6 +39,7 @@ box "Camada de Persistência" #LightGrey
     database "AulaRepository" as AR
 end box
 
+
 ' FA1 - UPLOAD DE MATERIAL
 
 == FA1: Upload de Material ==
@@ -65,7 +66,9 @@ activate SEC
     activate MS
         MS -> MS : validarAulaPertencimento\n(aulaId, idLogado, admin=false)
         MS -> AR : existsByIdAndCurso_Usuario\n_Credencial_Id(aulaId, idLogado)
+        activate AR
         AR --> MS : boolean
+        deactivate AR
 
         alt #white S1 — Aula não pertence ao usuário
             MS --> MC : IllegalAccessException\n("Você só pode enviar materiais\npara suas próprias aulas!")
@@ -81,7 +84,9 @@ activate SEC
                 MC --> VUE : 400 Bad Request\n{ mensagem de erro }
             else Arquivo válido
                 MS -> AR : getReferenceById(aulaId)
+                activate AR
                 AR --> MS : Aula (referência)
+                deactivate AR
 
                 MS -> FS : armazenar(arquivo, aulaId)
                 activate FS
@@ -96,9 +101,10 @@ activate SEC
                         FS --> MS : caminho/URL do arquivo
                         deactivate FS
 
-                        MS -> MS : material.setAula(aula)\nmaterial.setNomeOriginal(arquivo.nome)\nmaterial.setTipo(tipo)\nmaterial.setCaminho(url)\nmaterial.setTamanho(arquivo.tamanho)
                         MS -> MR : save(material)
+                        activate MR
                         MR --> MS : Material salvo
+                        deactivate MR
                         MS --> MC : Material
                         deactivate MS
                         MC -> MC : materialMapper.toResponse(material)
@@ -107,106 +113,6 @@ activate SEC
                     end
                 end
             end
-deactivate VUE
-
-' FA2 - LISTAR MATERIAIS DA AULA
-
-== FA2: Listar Materiais da Aula ==
-
-USR -> VUE : Listar Materiais da Aula
-activate VUE
-
-VUE -> SEC : GET /aulas/{aulaId}/materiais\nAuthorization: Bearer <token>
-activate SEC
-    SEC -> SEC : recuperarToken(request)
-    SEC -> SEC : tokenService.validarToken(token)
-
-    alt #white S1 — Token inválido / sem autenticação
-        SEC --> VUE : 403 Forbidden
-    else Token válido
-        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
-        SEC -> MC : repassa requisição autenticada
-        deactivate SEC
-        activate MC
-    end
-
-    MC -> MS : listarMateriais(aulaId, idLogado, admin=false)
-    activate MS
-        MS -> MS : validarAulaPertencimento\n(aulaId, idLogado, admin=false)
-        MS -> AR : existsByIdAndCurso_Usuario\n_Credencial_Id(aulaId, idLogado)
-        AR --> MS : boolean
-
-        alt #white S1 — Aula não pertence ao usuário
-            MS --> MC : IllegalAccessException\n("Você só pode ver materiais\nde suas próprias aulas!")
-            MC --> VUE : 400 Bad Request\n{ mensagem de erro }
-        else Aula pertence ao usuário
-            MS -> MR : findByAula_IdAndDataDelecaoIsNull(aulaId)
-            MR --> MS : List<Material>
-            MS --> MC : List<Material>
-            deactivate MS
-            MC -> MC : materiais.stream()\n.map(toResponse)
-            MC --> VUE : 200 OK\n{ List<MaterialResponseDTO> }
-            deactivate MC
-        end
-deactivate VUE
-
-' FA3 - REMOVER MATERIAL
-
-== FA3: Remover Material ==
-
-USR -> VUE : Remover Material
-activate VUE
-
-VUE -> SEC : DELETE /materiais/{id}\nAuthorization: Bearer <token>
-activate SEC
-    SEC -> SEC : recuperarToken(request)
-    SEC -> SEC : tokenService.validarToken(token)
-
-    alt #white S1 — Token inválido / sem autenticação
-        SEC --> VUE : 403 Forbidden
-    else Token válido
-        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
-        SEC -> MC : repassa requisição autenticada
-        deactivate SEC
-        activate MC
-    end
-
-    MC -> MS : removerMaterial(id, idLogado, admin=false)
-    activate MS
-        MS -> MS : validarMaterialPertencimento\n(id, idLogado, admin=false)
-        MS -> MR : existsByIdAndAula_Curso_Usuario\n_Credencial_Id(id, idLogado)
-        MR --> MS : boolean
-
-        alt #white S1 — Material não pertence ao usuário
-            MS --> MC : IllegalAccessException\n("Você só pode remover\nseus próprios materiais!")
-            MC --> VUE : 400 Bad Request\n{ mensagem de erro }
-        else Material pertence ao usuário
-            MS -> MS : getMaterialPorId(id)
-            MS -> MR : findById(id)
-            MR --> MS : Optional<Material>
-
-            alt #white S2 — Material não encontrado
-                MS --> MC : EntityNotFoundException\n("Material não encontrado!")
-                MC --> VUE : 404 Not Found\n{ mensagem de erro }
-            else S3 — Material já excluído
-                MS --> MC : IllegalArgumentException\n("Material já foi excluído!")
-                MC --> VUE : 400 Bad Request\n{ mensagem de erro }
-            else Material ativo
-                note over MS
-                  Exclusão lógica (dataDelecao),
-                  consistente com o padrão usado
-                  em Aula/Curso. O arquivo físico
-                  permanece no armazenamento.
-                end note
-                MS -> MS : material.setDataDelecao(now())
-                MS -> MR : save(material)
-                MR --> MS : Material (excluído logicamente)
-                MS --> MC : true
-                deactivate MS
-                MC --> VUE : 204 No Content
-                deactivate MC
-            end
-        end
 deactivate VUE
 
 @enduml

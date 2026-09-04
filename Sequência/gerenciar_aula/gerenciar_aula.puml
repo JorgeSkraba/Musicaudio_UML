@@ -35,10 +35,6 @@ box "Camada de Persistência" #LightGrey
     database "CursoRepository" as CR
 end box
 
-' ==========================================================
-' FA1 - CADASTRAR AULA
-' ==========================================================
-
 == FA1: Cadastrar Aula ==
 note over USR: Pré-condição: autenticado via JWT,\né dono do curso ao qual a aula pertencerá
 

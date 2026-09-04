@@ -1,0 +1,120 @@
+@startuml Gerenciar Curso
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 200
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupFontStyle bold
+skinparam noteFontSize 11
+skinparam ParticipantFontStyle bold
+
+title Diagrama de Sequência - Caso de Uso: Gerenciar Curso\nParte Admin\nMusicáudio v1.0
+
+skinparam backgroundColor lightyellow
+
+actor "Administrador" as ADM
+
+box "Camada Vue JS" #LightGreen
+    boundary "Views JS" as VUE
+end box
+
+box "Camada de Segurança" #LightYellow
+    participant "SecurityFilter\n(JWT)" as SEC
+end box
+
+box "Camada de Controle" #LightBlue
+    control "CursoController" as CC
+end box
+
+box "Camada de Serviço" #LightPink
+    entity "CursoService" as CS
+end box
+
+box "Camada de Persistência" #LightGrey
+    database "CursoRepository" as CR
+end box
+
+' FA1-Admin - LISTAR CURSOS (ATIVOS/DESATIVADOS, PAGINADO)
+
+== FA1-Admin: Listar Cursos ==
+note over ADM: Pré-condição: autenticado como ADMIN
+
+ADM -> VUE : Listar Cursos
+activate VUE
+
+VUE -> SEC : GET /cursos ? deleted & page & size & sortBy\nAuthorization: Bearer <token>
+activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt #white S1 - Token inválido / sem autenticação
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CC : repassa requisição autenticada
+         deactivate SEC
+         activate CC
+    end
+
+    alt #white deleted = false
+        CC -> CS : getCursosAtivos(page, size, sortBy)
+        activate CS
+            CS -> CR : findAll(pageable)\n[filtro "cursoAtivoFilter" habilitado]
+            activate CR
+            CR --> CS : Page<Curso>
+            deactivate CR
+        deactivate CS
+    else deleted = true
+        CC -> CS : getCursosDesativados(page, size, sortBy)
+        activate CS
+            CS -> CR : findAllDeleted(pageable)\n[filtro "cursoAtivoFilter" desabilitado]
+            activate CR
+            CR --> CS : Page<Curso>
+            deactivate CR
+            CS-->CC : Page<CursoResponseDTO>
+        deactivate CS
+    end
+
+    CC --> VUE : 200 OK\n{ Page<CursoResponseDTO> }
+deactivate CC
+deactivate VUE
+
+' FA2-Admin - LISTAR CURSO POR ID
+
+== FA2-Admin: Buscar Curso por Id ==
+
+ADM -> VUE : Visualizar Curso por Id
+activate VUE
+VUE -> SEC : GET /cursos/{id}\nAuthorization: Bearer <token>
+activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt #white S1 - Token inválido / sem autenticação
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CC : repassa requisição autenticada
+         deactivate SEC
+         activate CC
+    end
+CC -> CS : getCursoPorId(id)
+activate CS
+CS -> CR : findById(id)
+    alt #white S1 - Curso não encontrado
+            CR --> CS : Optional.empty()
+            activate CR
+            CS --> CC : EntityNotFoundException\n("Curso não encontrado!")
+            CC --> VUE : 404 Not Found\n{ "Curso não encontrado!" }
+    else Curso existe
+        CR --> CS : Curso
+        deactivate CR
+        CS --> CC : Curso
+        deactivate CS
+        CC --> VUE : 200 OK\n{ CursoResponseDTO }
+        deactivate CC
+    end
+deactivate VUE
+
+
+@enduml

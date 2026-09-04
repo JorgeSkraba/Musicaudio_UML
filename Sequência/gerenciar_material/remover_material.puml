@@ -1,0 +1,100 @@
+@startuml Gerenciar Material
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 200
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupFontStyle bold
+skinparam noteFontSize 11
+skinparam ParticipantFontStyle bold
+
+title Diagrama de Sequência - Caso de Uso: Upload de Materiais\nUsuário Autenticado (Instrutor)\nMusicáudio v1.0\n[PROPOSTA - ainda não implementado]
+
+skinparam backgroundColor lightyellow
+
+actor "Usuário" as USR
+
+box "Camada Vue JS" #LightGreen
+    boundary "Views JS" as VUE
+end box
+
+box "Camada de Segurança" #LightYellow
+    participant "SecurityFilter\n(JWT)" as SEC
+end box
+
+box "Camada de Controle" #LightBlue
+    control "MaterialController" as MC
+end box
+
+box "Camada de Serviço" #LightPink
+    entity "MaterialService" as MS
+end box
+
+box "Camada de Armazenamento" #Orange
+    control "FileStorageService\n(genérico)" as FS
+end box
+
+box "Camada de Persistência" #LightGrey
+    database "MaterialRepository" as MR
+    database "AulaRepository" as AR
+end box
+
+' FA3 - REMOVER MATERIAL
+
+== FA3: Remover Material ==
+
+USR -> VUE : Remover Material
+activate VUE
+
+VUE -> SEC : DELETE /materiais/{id}\nAuthorization: Bearer <token>
+activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt #white S1 — Token inválido / sem autenticação
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> MC : repassa requisição autenticada
+        deactivate SEC
+        activate MC
+    end
+
+    MC -> MS : removerMaterial(id, idLogado, admin=false)
+    activate MS
+        MS -> MS : validarMaterialPertencimento\n(id, idLogado, admin=false)
+        MS -> MR : existsByIdAndAula_Curso_Usuario\n_Credencial_Id(id, idLogado)
+        activate MR
+        MR --> MS : boolean
+        deactivate MR
+
+        alt #white S1 — Material não pertence ao usuário
+            MS --> MC : IllegalAccessException\n("Você só pode remover\nseus próprios materiais!")
+            MC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else Material pertence ao usuário
+            MS -> MS : getMaterialPorId(id)
+            MS -> MR : findById(id)
+            activate MR
+            MR --> MS : Optional<Material>
+            deactivate MR
+
+            alt #white S2 — Material não encontrado
+                MS --> MC : EntityNotFoundException\n("Material não encontrado!")
+                MC --> VUE : 404 Not Found\n{ mensagem de erro }
+            else S3 — Material já excluído
+                MS --> MC : IllegalArgumentException\n("Material já foi excluído!")
+                MC --> VUE : 400 Bad Request\n{ mensagem de erro }
+            else Material ativo
+                MS -> MR : delete(material)
+                activate MR
+                MR --> MS : Void
+                deactivate MR
+                MS --> MC : Void
+                deactivate MS
+                MC --> VUE : 204 No Content
+                deactivate MC
+            end
+        end
+deactivate VUE
+
+@enduml

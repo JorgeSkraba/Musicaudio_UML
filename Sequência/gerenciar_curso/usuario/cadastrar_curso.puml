@@ -1,0 +1,97 @@
+@startuml Gerenciar Curso
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 200
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupFontStyle bold
+skinparam noteFontSize 11
+skinparam ParticipantFontStyle bold
+
+title Diagrama de Sequência — Caso de Uso: Gerenciar Curso (Usuário Autenticado)\nMusicáudio v1.0
+
+skinparam backgroundColor lightyellow
+
+actor "Usuário" as USR
+
+box "Camada Vue JS" #LightGreen
+    boundary "Views JS" as VUE
+end box
+
+box "Camada de Segurança" #LightYellow
+    participant "SecurityFilter\n(JWT)" as SEC
+end box
+
+box "Camada de Controle" #LightBlue
+    control "CursoController" as CC
+end box
+
+box "Camada de Serviço" #LightPink
+    entity "CursoService" as CS
+end box
+
+box "Camada de Persistência" #LightGrey
+    database "CredencialRepository" as AR
+    database "UsuarioRepository" as UR
+    database "CursoRepository" as CR
+end box
+
+' FA1 — CADASTRAR CURSO
+
+== FA1: Cadastrar Curso ==
+note over USR: Pré-condição: autenticado via JWT
+
+USR -> VUE : Cadastrar Curso
+activate VUE
+
+VUE -> SEC : POST /cursos/novo\nAuthorization: Bearer <token>\n{ dados do curso }
+activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt #white S1 — Token inválido / sem autenticação
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CC : repassa requisição autenticada
+         deactivate SEC
+         activate CC
+    end
+
+    CC -> CS : criarCurso(emailLogado, curso)
+    activate CS
+        CS -> CS : validarCurso(curso)
+
+        alt #white S1 — Dados obrigatórios não preenchidos
+            CS --> CC : Exception\n("Nome/Nível do curso é obrigatório!")
+            CC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else S2 — Dados inválidos (ex: preço negativo)
+            CS --> CC : Exception\n("Preço do curso precisa ser 0 ou mais!")
+            CC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else Dados válidos
+            CS -> CS : curso.setStatus("RASCUNHO")
+
+            CS -> AR : findByEmail(emailLogado)
+            activate AR
+            AR --> CS : Credencial
+            deactivate AR
+
+            CS -> UR : findUsuarioByCredencial_Id(credencialId)
+            activate UR
+            UR --> CS : Usuario
+            deactivate UR
+
+            CS -> CS : curso.setUsuario(usuario)
+
+            CS -> CR : save(curso)
+            activate CR
+            CR --> CS : Curso salvo
+            deactivate CR
+            CS --> CC : Curso
+                deactivate CS
+            CC --> VUE : 201 Created\n{ CursoResponseDTO }
+            deactivate CC
+        end
+deactivate VUE
+
+@enduml

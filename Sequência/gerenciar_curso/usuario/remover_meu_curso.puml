@@ -1,0 +1,107 @@
+@startuml Gerenciar Curso
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 200
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupFontStyle bold
+skinparam noteFontSize 11
+skinparam ParticipantFontStyle bold
+
+title Diagrama de Sequência — Caso de Uso: Gerenciar Curso (Usuário Autenticado)\nMusicáudio v1.0
+
+skinparam backgroundColor lightyellow
+
+actor "Usuário" as USR
+
+box "Camada Vue JS" #LightGreen
+    boundary "Views JS" as VUE
+end box
+
+box "Camada de Segurança" #LightYellow
+    participant "SecurityFilter\n(JWT)" as SEC
+end box
+
+box "Camada de Controle" #LightBlue
+    control "CursoController" as CC
+end box
+
+box "Camada de Serviço" #LightPink
+    entity "CursoService" as CS
+end box
+
+box "Camada de Persistência" #LightGrey
+    database "CredencialRepository" as AR
+    database "UsuarioRepository" as UR
+    database "CursoRepository" as CR
+end box
+
+' FA5 — REMOVER CURSO (Usuário Autenticado)
+
+== FA5: Remover Meu Curso ==
+note over USR: Pré-condição: autenticado;\ncurso pertence ao usuário
+
+USR -> VUE : Remover Meu Curso
+activate VUE
+
+VUE -> SEC : DELETE /cursos/meus-cursos/{id}\nAuthorization: Bearer <token>
+activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt #white S1 — Token inválido / sem autenticação
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CC : repassa requisição autenticada
+         deactivate SEC
+         activate CC
+    end
+
+    CC -> CS : apagarCurso(id, emailLogado, admin=false)
+    activate CS
+        CS -> CR : findById(id)
+        activate CR
+        CR --> CS : Curso
+        deactivate CR
+
+        alt #white S1 — Curso não encontrado
+            CS --> CC : EntityNotFoundException\n("Curso não foi achado!")
+            CC --> VUE : 404 Not Found
+        else S2 — Curso já excluído
+            CS --> CC : IllegalArgumentException\n("Curso já foi excluído!")
+            CC --> VUE : 400 Bad Request
+        else Curso encontrado e ativo
+            note over CS: validarPertenceAoUsuario(curso, emailLogado)
+            CS -> AR : findByEmail(emailLogado)
+            activate AR
+            AR --> CS : Credencial
+            deactivate AR
+
+            CS -> UR : findUsuarioByCredencial_Id(credencialId)
+            activate UR
+            UR --> CS : Usuario
+            deactivate UR
+
+            alt #white S3 — Curso não pertence ao usuário logado
+                CS --> CC : AccessDeniedException
+                CC --> VUE : 403 Forbidden
+            else S2 - Curso já excluído
+                CR --> CS : Curso (dataDelecao != null)
+                CS --> CC : IllegalArgumentException\n("Curso já foi excluído!")
+                CC --> VUE : 400 Bad Request\n{ "Curso já foi excluído!" }
+            else Curso pertence ao usuário
+                CS -> CS : curso.setDataDelecao(now())
+                CS -> CR : save(curso)
+                activate CR
+                CR --> CS : Curso (excluído logicamente)
+                deactivate CR
+                CS --> CC : true
+                deactivate CS
+                CC --> VUE : 204 No Content
+                deactivate CC
+            end
+        end
+deactivate VUE
+
+@enduml

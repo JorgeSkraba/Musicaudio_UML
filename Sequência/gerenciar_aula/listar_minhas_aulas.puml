@@ -1,0 +1,77 @@
+@startuml Gerenciar Aula
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 200
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupFontStyle bold
+skinparam noteFontSize 11
+skinparam ParticipantFontStyle bold
+
+title Diagrama de Sequência - Caso de Uso: Gerenciar Aula\nUsuário Autenticado (Instrutor)\nMusicáudio v1.0
+
+skinparam backgroundColor lightyellow
+
+actor "Usuário" as USR
+
+box "Camada Vue JS" #LightGreen
+    boundary "Views JS" as VUE
+end box
+
+box "Camada de Segurança" #LightYellow
+    participant "SecurityFilter\n(JWT)" as SEC
+end box
+
+box "Camada de Controle" #LightBlue
+    control "AulaController" as AC
+end box
+
+box "Camada de Serviço" #LightPink
+    entity "AulaService" as AS
+end box
+
+box "Camada de Persistência" #LightGrey
+    database "AulaRepository" as AR
+end box
+== FA2: Listar Minhas Aulas ==
+
+USR -> VUE : Listar Aulas do Curso
+activate VUE
+
+VUE -> SEC : GET /aulas/minhas-aulas/{cursoId}\nAuthorization: Bearer <token>
+activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt #white S1 — Token inválido / sem autenticação
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> AC : repassa requisição autenticada
+        deactivate SEC
+        activate AC
+    end
+
+    AC -> AS : getAulasPorCurso(cursoId, admin=false, idLogado)
+    activate AS
+        AS -> AS : validarCursoPertencimento\n(cursoId, idLogado, admin=false)
+
+        alt #white S1 — Curso não pertence ao usuário
+            AS --> AC : Exception\n("Você não pode alterar um curso\nque não te pertence!")
+            AC --> VUE : 500 Internal Server Error\n[sem tratamento no controller]
+        else Curso pertence ao usuário
+            AS -> AS : session.enableFilter\n("aulaAtivaFilter")
+            AS -> AR : findAulaByCurso_Id(cursoId)
+            activate AR
+            AR --> AS : List<Aula>
+            deactivate AR
+            AS --> AC : List<Aula>
+            deactivate AS
+            AC -> AC : aulas.stream()\n.map(toResponse)
+            AC --> VUE : 200 OK\n{ List<AulaResponseDTO> }
+            deactivate AC
+        end
+deactivate VUE
+
+
+@enduml

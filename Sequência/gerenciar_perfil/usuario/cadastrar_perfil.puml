@@ -1,0 +1,98 @@
+@startuml Gerenciar Perfil
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 200
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupFontStyle bold
+skinparam noteFontSize 11
+skinparam ParticipantFontStyle bold
+
+title Diagrama de Sequência - Caso de Uso: Gerenciar Perfil\nMusicáudio v1.0
+
+skinparam backgroundColor lightyellow
+
+actor "Usuário" as USR
+
+box "Camada Vue JS" #LightGreen
+    boundary "Views JS" as VUE
+end box
+
+box "Camada de Segurança" #LightYellow
+    participant "SecurityFilter\n(JWT)" as SEC
+end box
+
+box "Camada de Controle" #LightBlue
+    control "ContaController" as CC
+end box
+
+box "Camada de Serviço" #LightPink
+    entity "ContaService" as CS
+end box
+
+box "Camada de Persistência" #LightGrey
+    database "CredencialRepository" as AR
+    database "UsuarioRepository" as UR
+end box
+
+' FA1 - CADASTRAR PERFIL
+
+== FA1: Cadastrar Perfil ==
+note over USR: Pré-condição: não necessita\nestar autenticado
+
+USR -> VUE : Cadastrar Usuário
+activate VUE
+VUE -> CC : POST /contas\n{ dados da conta }
+
+activate CC
+
+    CC -> CC : Bean Validation\n(@Validated(ContaRequestDTO.OnCreate.class))
+    note right of CC: Validação de formato é feita\npelo Jakarta Validation no próprio DTO,\nantes do corpo do método ser executado.
+
+    alt #white S0 - Campo obrigatório ausente / formato inválido
+        CC --> VUE : 400 Bad Request\n{ erros de validação por campo }\n(tratado automaticamente pelo Spring)
+    else Dados no formato válido
+        CC -> CS : novaConta(dados)
+        activate CS
+
+            note over CS: criarConta(dados, permitirAdmin=false)\n(regras de negócio que a Bean\nValidation não cobre)
+
+            CS -> AR : findByEmail(email)\n[verificação de e-mail já existente]
+            activate AR
+            AR --> CS : null / Credencial
+            deactivate AR
+
+            alt #white S1 - Email já cadastrado
+                CS --> CC : Exception\n("Email já existe!")
+                CC --> VUE : 400 Bad Request\n{ mensagem de erro }
+            else Email disponível
+                CS -> CS : passwordEncoder.encode(senha)
+                CS -> CS : credencial.setAdmin(false)
+                CS -> AR : save(credencial)
+                activate AR
+                AR --> CS : Credencial salva
+                deactivate AR
+
+                CS -> UR : findUsuarioByCpf(cpf)\n[verificação de CPF já cadastrado]
+                activate UR
+                UR --> CS : null / Usuario
+                deactivate UR
+
+                alt #WhiteSmoke S2 - CPF já cadastrado
+                    CS --> CC : Exception\n("CPF já cadastrado!")
+                    CC --> VUE : 400 Bad Request\n{ mensagem de erro }
+                else CPF disponível
+                    CS -> UR : save(usuario)
+                    activate UR
+                    UR --> CS : Usuario salvo
+                    deactivate UR
+                    CS --> CC : ContaResponseDTO
+                    deactivate CS
+                    CC --> VUE : 201 Created\n{ ContaResponseDTO }
+                    deactivate CC
+                end
+            end
+    end
+deactivate VUE
+
+@enduml

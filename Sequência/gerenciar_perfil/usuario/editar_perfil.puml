@@ -1,0 +1,114 @@
+@startuml Gerenciar Perfil
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 200
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupFontStyle bold
+skinparam noteFontSize 11
+skinparam ParticipantFontStyle bold
+
+title Diagrama de Sequência - Caso de Uso: Gerenciar Perfil\nMusicáudio v1.0
+
+skinparam backgroundColor lightyellow
+
+actor "Usuário" as USR
+
+box "Camada Vue JS" #LightGreen
+    boundary "Views JS" as VUE
+end box
+
+box "Camada de Segurança" #LightYellow
+    participant "SecurityFilter\n(JWT)" as SEC
+end box
+
+box "Camada de Controle" #LightBlue
+    control "ContaController" as CC
+end box
+
+box "Camada de Serviço" #LightPink
+    entity "ContaService" as CS
+end box
+
+box "Camada de Persistência" #LightGrey
+    database "CredencialRepository" as AR
+    database "UsuarioRepository" as UR
+end box
+
+' FA3 - EDITAR PERFIL (usuário comum)
+
+== FA3: Editar Perfil (Usuário Autenticado) ==
+
+USR -> VUE : Editar Perfil
+
+activate VUE
+
+VUE -> SEC : PUT /contas/minha-conta\nAuthorization: Bearer <token>\n{ dados atualizados }
+activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt #white S1 - Token inválido / sem permissão
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CC : repassa requisição autenticada
+         deactivate SEC
+         activate CC
+    end
+
+    CC -> CS : getContaPorEmail(emailLogado)
+    activate CS
+        CS -> AR : findByEmail(emailLogado)
+        activate AR
+        AR --> CS : Credencial
+        deactivate AR
+        CS -> UR : findUsuarioByCredencial_Id(credencialId)
+        activate UR
+        UR --> CS : Usuario
+        deactivate UR
+        CS --> CC : ContaResponseDTO\n(contém credencialId)
+    deactivate CS
+
+    CC -> CS : atualizarMinhaConta(credencialId, dados)
+    activate CS
+        note over CS: atualizarConta(credencialId, dados, minhaConta=true)
+
+        CS -> AR : findById(credencialId)
+        activate AR
+        AR --> CS : Credencial atual
+        deactivate AR
+
+        CS -> UR : findUsuarioByCredencial_Id(credencialId)
+        activate UR
+        UR --> CS : Usuario atual
+        deactivate UR
+
+        CS -> CS : validarCredencial(credencialAtualizada, criando=false)
+        CS -> CS : validarUsuario(usuarioAtualizado, criando=false)
+
+        alt #white S1 - Conta deletada / dados inválidos
+            CS --> CC : Exception\n("Não é possível alterar\ncredenciais/usuário deletados")
+            CC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else Dados válidos
+            CS -> CS : atualiza campos da credencial\n(admin, email, senha se informada)
+            CS -> CS : atualiza campos do usuário\n(nome, sobrenome, cpf, nascimento, telefone)
+
+            CS -> AR : save(credencialAtual)
+            activate AR
+            AR --> CS : Credencial atualizada
+            deactivate AR
+
+            CS -> UR : save(usuarioAtual)
+            activate UR
+            UR --> CS : Usuario atualizado
+            deactivate UR
+
+            CS --> CC : ContaResponseDTO atualizado
+            deactivate CS
+            CC --> VUE : 200 OK\n{ ContaResponseDTO atualizado }
+            deactivate CC
+        end
+deactivate VUE
+
+@enduml

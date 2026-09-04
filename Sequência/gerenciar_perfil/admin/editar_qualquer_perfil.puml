@@ -1,0 +1,111 @@
+@startuml Gerenciar Perfil Admin
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 200
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupFontStyle bold
+skinparam noteFontSize 11
+skinparam ParticipantFontStyle bold
+
+title Diagrama de Sequêcnia - Caso de Uso: Gerenciar Perfil\nParte Admin\nMusicáudio v1.0
+
+skinparam backgroundColor lightyellow
+
+actor "Administrador" as ADM
+
+box "Camada Vue JS" #LightGreen
+    boundary "Views JS" as VUE
+end box
+
+box "Camada de Segurança" #LightYellow
+    participant "SecurityFilter\n(JWT)" as SEC
+end box
+
+box "Camada de Controle" #LightBlue
+    control "ContaAdminController" as CAC
+end box
+
+box "Camada de Serviço" #LightPink
+    entity "ContaService" as CS
+end box
+
+box "Camada de Persistência" #LightGrey
+    database "CredencialRepository" as AR
+    database "UsuarioRepository" as UR
+end box
+
+' FA3-Admin - EDITAR QUALQUER PERFIL
+
+== FA3-Admin: Editar Qualquer Perfil ==
+ADM -> VUE : Editar Perfis
+
+activate VUE
+
+VUE -> SEC : PUT /contas/{id}\nAuthorization: Bearer <token>\n{ dados atualizados }
+activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt #white S1 — Token inválido / sem permissão
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CAC : repassa requisição autenticada
+         deactivate SEC
+         activate CAC
+    end
+
+    CAC -> CAC : Bean Validation\n(@Valid ContaRequestDTO)
+    note right of CAC: Sem o grupo OnCreate, senha é opcional\n(mantém-se a atual caso não informada).\nDemais campos (email, nome, cpf etc.)\nsão validados por formato/obrigatoriedade.
+
+    alt #white S0 — Campo obrigatório ausente / formato inválido
+        CAC --> VUE : 400 Bad Request\n{ erros de validação por campo }\n(tratado automaticamente pelo Spring)
+    else Dados no formato válido
+        CAC -> CS : atualizarConta(id, dados, minhaConta=false)
+        activate CS
+
+            CS -> AR : findById(id)
+            activate AR
+            AR --> CS : Credencial atual
+            deactivate AR
+
+            alt #white S1 — Credencial não encontrada
+                CS --> CAC : EntityNotFoundException\n("Credencial não encontrada!")
+                CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
+            else Credencial encontrada
+                CS -> UR : findUsuarioByCredencial_Id(id)
+                activate UR
+                UR --> CS : Usuario atual
+                deactivate UR
+
+                CS -> CS : validarCredencial(credencialAtualizada, criando=false)
+                CS -> CS : validarUsuario(usuarioAtualizado, criando=false)
+
+                alt #WhiteSmoke S2 — Credencial/usuário já deletado
+                    CS --> CAC : Exception\n("Não é possível alterar\ncredenciais/usuário deletados")
+                    CAC --> VUE : 400 Bad Request\n{ mensagem de erro }
+                else Dados válidos
+                    CS -> CS : atualiza campos da credencial\n(admin, email, senha se informada)
+                    CS -> CS : atualiza campos do usuário\n(nome, sobrenome, cpf, nascimento, telefone)
+
+                    CS -> AR : save(credencialAtual)
+                    activate AR
+                    AR --> CS : Credencial atualizada
+                    deactivate AR
+
+                    CS -> UR : save(usuarioAtual)
+                    activate UR
+                    UR --> CS : Usuario atualizado
+                    deactivate UR
+
+                    CS --> CAC : ContaResponseDTO atualizado\n(toAdminResponse)
+                    deactivate CS
+                    CAC --> VUE : 200 OK\n{ ContaResponseDTO atualizado }
+                    deactivate CAC
+                end
+            end
+    end
+deactivate VUE
+
+@enduml

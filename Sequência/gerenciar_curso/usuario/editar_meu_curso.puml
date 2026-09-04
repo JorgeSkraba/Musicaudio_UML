@@ -1,0 +1,106 @@
+@startuml Gerenciar Curso
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 200
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupFontStyle bold
+skinparam noteFontSize 11
+skinparam ParticipantFontStyle bold
+
+title Diagrama de Sequência — Caso de Uso: Gerenciar Curso (Usuário Autenticado)\nMusicáudio v1.0
+
+skinparam backgroundColor lightyellow
+
+actor "Usuário" as USR
+
+box "Camada Vue JS" #LightGreen
+    boundary "Views JS" as VUE
+end box
+
+box "Camada de Segurança" #LightYellow
+    participant "SecurityFilter\n(JWT)" as SEC
+end box
+
+box "Camada de Controle" #LightBlue
+    control "CursoController" as CC
+end box
+
+box "Camada de Serviço" #LightPink
+    entity "CursoService" as CS
+end box
+
+box "Camada de Persistência" #LightGrey
+    database "CredencialRepository" as AR
+    database "UsuarioRepository" as UR
+    database "CursoRepository" as CR
+end box
+
+' FA2 — EDITAR CURSO (Usuário Autenticado)
+
+== FA2: Editar Meu Curso ==
+note over USR: Pré-condição: autenticado via JWT;\no curso deve pertencer ao usuário
+
+USR -> VUE : Editar Meu Curso
+activate VUE
+
+VUE -> SEC : PUT /cursos/meus-cursos/{id}\nAuthorization: Bearer <token>\n{ dados atualizados }
+activate SEC
+    SEC -> SEC : recuperarToken(request)
+    SEC -> SEC : tokenService.validarToken(token)
+
+    alt #white S1 — Token inválido / sem autenticação
+        SEC --> VUE : 403 Forbidden
+    else Token válido
+        SEC -> SEC : SecurityContextHolder\n.setAuthentication(auth)
+        SEC -> CC : repassa requisição autenticada
+         deactivate SEC
+         activate CC
+    end
+
+    CC -> CS : atualizarCurso(id, cursoAtualizado, emailLogado, admin=false)
+    activate CS
+        CS -> CS : validarCurso(cursoAtualizado)
+
+        alt #WhiteSmoke S1 — Dados obrigatórios não preenchidos
+            CS --> CC : Exception\n(mensagem de validação)
+            CC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else S2 — Dados inválidos
+            CS --> CC : Exception\n(mensagem de validação)
+            CC --> VUE : 400 Bad Request\n{ mensagem de erro }
+        else Dados válidos
+            CS -> CR : findById(id)
+            activate CR
+            CR --> CS : Curso
+            deactivate CR
+
+            note over CS: validarPertenceAoUsuario(cursoAtualizado, emailLogado)
+            CS -> AR : findByEmail(emailLogado)
+            activate AR
+            AR --> CS : Credencial
+            deactivate AR
+
+            CS -> UR : findUsuarioByCredencial_Id(credencialId)
+            activate UR
+            UR --> CS : Usuario
+            deactivate UR
+
+            alt #white S3 — Curso não pertence ao usuário logado
+                CS --> CC : AccessDeniedException\n("Você só pode realizar operações\nem seus próprios cursos!")
+                CC --> VUE : 403 Forbidden
+            else Curso pertence ao usuário
+                CS -> CS : atualiza nome, descrição,\npreço, nível e status
+                CS -> CR : save(curso)
+                activate CR
+                CR --> CS : Curso atualizado
+                deactivate CR
+                CS --> CC : Curso
+                     deactivate CS
+                 CC --> VUE : 200 OK\n{ CursoResponseDTO atualizado }
+                   deactivate CC
+            end
+        end
+deactivate VUE
+
+
+@enduml
